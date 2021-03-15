@@ -1,4 +1,5 @@
 #!/bin/bash
+# Aldán Creo Mariño, SOII 20/21
 if [ $# -eq 0 ] || [ ! -f "$1" ] ; then # Si no se han proporcionado argumentos...
 echo "No se ha definido la ruta del archivo o no existe. Uso: $0 [ruta]"
 else # Si se han proporcionado, seguimos normalmente
