@@ -10,12 +10,19 @@ num_accesos=`wc -l $1 | awk 'END {print $1}'`
 echo "$num_ips direcciones diferentes extraídas en /tmp/access_ip.log"
 echo "$num_404 accesos a URLs no encontradas extraídos en /tmp/access_404.log"
 echo "$num_accesos accesos en total:"
-meses=`grep -Eo '\w+\/\d+:\d+:\d+:\d+\s\S+\]' $1 | grep -Eo '^\w+' | sort | uniq`
-for mes in $meses
-    do 
-        dias_por_mes=`cal -m $mes | awk 'NF {DAYS = $NF}; END {print DAYS}'`
-        accesos_mes=`grep -Eo '\w+\/\d+:\d+:\d+:\d+\s\S+\]' $1 | grep -Eo "^$mes" | wc -l | sed -e 's/^[[:space:]]*//'`
-        accesos_por_hora=`bc <<< "scale=1; $accesos_mes / ( $dias_por_mes * 24 )"`
-        echo "$mes: $accesos_mes accesos en total ($accesos_por_hora accesos por hora)"
-    done
+mes='Dec'
+dias_por_mes=`cal -m $mes | awk 'NF {DAYS = $NF}; END {print DAYS}'`
+accesos_mes=`grep -Eo '\w+\/\d+:\d+:\d+:\d+\s\S+\]' $1 | grep -Eo "^$mes" | wc -l | sed -e 's/^[[:space:]]*//'`
+accesos_por_hora=`bc <<< "scale=1; $accesos_mes / ( $dias_por_mes * 24 )"`
+echo "$mes: $accesos_mes accesos en total ($accesos_por_hora accesos por hora)"
+mes='Jan'
+dias_por_mes=`cal -m $mes | awk 'NF {DAYS = $NF}; END {print DAYS}'`
+accesos_mes=`grep -Eo '\w+\/\d+:\d+:\d+:\d+\s\S+\]' $1 | grep -Eo "^$mes" | wc -l | sed -e 's/^[[:space:]]*//'`
+accesos_por_hora=`bc <<< "scale=1; $accesos_mes / ( $dias_por_mes * 24 )"`
+echo "$mes: $accesos_mes accesos en total ($accesos_por_hora accesos por hora)"
+mes='Feb'
+dias_por_mes=`cal -m $mes | awk 'NF {DAYS = $NF}; END {print DAYS}'`
+accesos_mes=`grep -Eo '\w+\/\d+:\d+:\d+:\d+\s\S+\]' $1 | grep -Eo "^$mes" | wc -l | sed -e 's/^[[:space:]]*//'`
+accesos_por_hora=`bc <<< "scale=1; $accesos_mes / ( $dias_por_mes * 24 )"`
+echo "$mes: $accesos_mes accesos en total ($accesos_por_hora accesos por hora)"
 fi
