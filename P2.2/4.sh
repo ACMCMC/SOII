@@ -1,6 +1,6 @@
 #!/bin/bash
-if [ $# -eq 0 ]; then # Si no se han proporcionado argumentos...
-echo "No se ha definido la ruta del archivo. Uso: $0 [ruta]"
+if [ $# -eq 0 ] || [ ! -f "$1" ] ; then # Si no se han proporcionado argumentos...
+echo "No se ha definido la ruta del archivo o no existe. Uso: $0 [ruta]"
 else # Si se han proporcionado, seguimos normalmente
 grep -Eo '^(?:\d{1,3}.){3}\d{1,3}' $1 | sort | uniq -c > /tmp/access_ip.log # Extraer las direcciones IP a un fichero
 grep -Eo '\S+\s\S+"\s404\s\d+$' $1 | grep -Eo '^\S+' > /tmp/access_404.log # Extraer únicamente las URLs con respuesta del servidor 404
