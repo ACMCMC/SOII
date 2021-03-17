@@ -1,7 +1,7 @@
 #!/bin/bash
 # Aldán Creo Mariño, SOII 20/21
 check_args() {
-    [[ $1=='-a' && $2 ]] || [[ $1=='-s' && $2 && $3 ]] || [[ $1=='-e' && $2 && $3 ]] || [[ $1=='-u' && $2 && $3 ]] # Hacemos un test: las opciones necesarias están definidas?
+    [[ $1 == '-a' && $2 ]] || [[ $1 == '-s' && $2 && $3 ]] || [[ $1 == '-e' && $2 && $3 ]] || [[ $1 == '-u' && $2 && $3 ]] # Hacemos un test: las opciones necesarias están definidas?
     return $? # Devolvemos el estado del comando anterior, que es un número (TRUE/FALSE)
 }
 if (check_args $1 $2 $3); # Ejecutamos la función de comprobación

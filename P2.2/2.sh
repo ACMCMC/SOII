@@ -6,8 +6,8 @@ check_shell() { # Función que solo debe recibir como parámetro el nombre del s
 echo "Nombre de shell especificado: $1" # Info para el usuario
 if (check_shell $1) # Comprobamos que el shell existe
 then
-shell=`grep -F "/$1" /etc/shells`
-grep -E ":$shell\$" /etc/passwd # Buscamos las líneas que contengan esa palabra en el archivo /etc/passwd
+shell=`grep -Fm1 "/$1" /etc/shells`
+grep -P ":$shell\$" /etc/passwd # Buscamos las líneas que contengan esa palabra en el archivo /etc/passwd
 else
 echo "Se ha especificado un nombre de shell que no existe" # Mensaje de error
 fi
