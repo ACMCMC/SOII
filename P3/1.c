@@ -55,9 +55,9 @@ void imprimir_buffer()
 
 void dormir()
 {
-    printf("(%c) Voy a dormirme\n", getpid()==pid_consumidor ? 'C' : 'P' );
+    printf("(%c) Voy a dormirme\n", getpid() == pid_consumidor ? 'C' : 'P');
     kill(getpid(), SIGSTOP);
-    printf("(%c) He despertado!\n", getpid()==pid_consumidor ? 'C' : 'P' );
+    printf("(%c) He despertado!\n", getpid() == pid_consumidor ? 'C' : 'P');
 }
 
 void despertar(pid_t pid)
@@ -107,7 +107,7 @@ void productor()
             despertar(pid_consumidor);
         }
     }
-            printf("(P) He acabado!\n");
+    printf("(P) He acabado!\n");
 }
 
 void consumidor()
@@ -131,7 +131,7 @@ void consumidor()
         }
         consumir(item);
     }
-            printf("(C) He acabado!\n");
+    printf("(C) He acabado!\n");
 }
 
 int main()
