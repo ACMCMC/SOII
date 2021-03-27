@@ -25,6 +25,8 @@
 #define ANSI_COLOR_RESET "\x1b[0m"
 
 int *buffer, *cuenta;
+int fd_cuenta, fd_buffer, fd_pids;
+struct stat fd_pids_info, fd_cuenta_info;
 
 typedef struct
 {
@@ -68,14 +70,72 @@ void imprimir_buffer()
 
 void dormir()
 {
-    printf("(%c) Voy a dormirme\n", getpid() == pid_consumidor ? 'C' : 'P');
+    //printf("(%c) Voy a dormirme\n", getpid() == pid_consumidor ? 'C' : 'P');
     kill(getpid(), SIGSTOP);
-    printf("(%c) He despertado!\n", getpid() == pid_consumidor ? 'C' : 'P');
+    //printf("(%c) He despertado!\n", getpid() == pid_consumidor ? 'C' : 'P');
 }
 
 void despertar(pid_t pid)
 {
     kill(pid, SIGCONT);
+}
+
+pid_t get_pid_productor()
+{
+    int i;
+    struct stat fd_pids_info_actualizada;
+    info_proceso *puntero;
+    if (fstat(fd_cuenta, &fd_pids_info_actualizada))
+    {
+        perror("Error en fstat()");
+        exit(EXIT_FAILURE);
+    }
+    if (fd_pids_info_actualizada.st_size != (fd_pids_info.st_size + sizeof(info_proceso)))
+    {
+        vector_info_procesos = (info_proceso *)mmap(NULL, fd_pids_info_actualizada.st_size + sizeof(info_proceso), PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, fd_pids, 0);
+        if (vector_info_procesos == MAP_FAILED)
+        {
+            perror("Error en mmap()");
+            exit(EXIT_FAILURE);
+        }
+    }
+    for (puntero = vector_info_procesos; puntero < (vector_info_procesos + (fd_pids_info_actualizada.st_size / sizeof(info_proceso))); puntero++)
+    {
+        if (puntero->tipo == PRODUCTOR)
+        {
+            return puntero->pid;
+        }
+    }
+    return 0;
+}
+
+pid_t get_pid_consumidor()
+{
+    int i;
+    struct stat fd_pids_info_actualizada;
+    info_proceso *puntero;
+    if (fstat(fd_cuenta, &fd_pids_info_actualizada))
+    {
+        perror("Error en fstat()");
+        exit(EXIT_FAILURE);
+    }
+    if (fd_pids_info_actualizada.st_size != (fd_pids_info.st_size + sizeof(info_proceso)))
+    {
+        vector_info_procesos = (info_proceso *)mmap(NULL, fd_pids_info_actualizada.st_size + sizeof(info_proceso), PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, fd_pids, 0);
+        if (vector_info_procesos == MAP_FAILED)
+        {
+            perror("Error en mmap()");
+            exit(EXIT_FAILURE);
+        }
+    }
+    for (puntero = vector_info_procesos; puntero < (vector_info_procesos + (fd_pids_info_actualizada.st_size / sizeof(info_proceso))); puntero++)
+    {
+        if (puntero->tipo == PRODUCTOR)
+        {
+            return puntero->pid;
+        }
+    }
+    return 0;
 }
 
 void insertar_item_buffer(int item)
@@ -117,7 +177,7 @@ void productor()
         if (*cuenta == 1)
         {
             printf("(P) Voy a despertar a C\n");
-            despertar(pid_consumidor);
+            despertar(get_pid_consumidor());
         }
     }
     printf("(P) He acabado!\n");
@@ -140,7 +200,7 @@ void consumidor()
         if (*cuenta == (TAM_BUFFER - 1))
         {
             printf("(C) Voy a despertar a P\n");
-            despertar(pid_productor);
+            despertar(get_pid_productor());
         }
         consumir(item);
     }
@@ -149,12 +209,10 @@ void consumidor()
 
 int main(int argc, char **argv)
 {
-    int fd_cuenta, fd_buffer, fd_pids;
-    struct stat fd_pifs_info, fd_cuenta_info;
 
-    if (argc != 2 || strncmp("-c", argv[1], 2) != 0 || strncmp("-p", argv[1], 2) != 0)
+    if (argc != 2 || (strncmp("-c", argv[1], 2) != 0 && strncmp("-p", argv[1], 2) != 0))
     {
-        perror("Formato: %s [-c, para consumidor; -p, para productor]");
+        fprintf(stderr, "Formato: %s [-c, para consumidor; -p, para productor]\n", argv[0]);
         exit(EXIT_SUCCESS);
     }
 
@@ -170,7 +228,7 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
 
-    if (fstat(fd_pids, &fd_pifs_info))
+    if (fstat(fd_pids, &fd_pids_info))
     {
         perror("Error en fstat()");
         exit(EXIT_FAILURE);
@@ -180,7 +238,7 @@ int main(int argc, char **argv)
         perror("Error en fstat()");
         exit(EXIT_FAILURE);
     }
-
+printf("tam: %d, tam req: %d\n", fd_cuenta_info.st_size, sizeof(int));
     if (fd_cuenta_info.st_size != sizeof(int))
     { // Si el fichero originalmente no tenía el tamaño para albergar un int, le ponemos nosotros ese tamaño. El valor del tamaño que tenía al principio lo guardamos para después.
         if (ftruncate(fd_cuenta, sizeof(int)) == -1)
@@ -194,7 +252,7 @@ int main(int argc, char **argv)
         perror("Error en ftruncate()");
         exit(EXIT_FAILURE);
     }
-    if (ftruncate(fd_pids, fd_pifs_info.st_size + sizeof(info_proceso)) == -1) // Añadimos sitio para un struct de información más
+    if (ftruncate(fd_pids, fd_pids_info.st_size + sizeof(info_proceso)) == -1) // Añadimos sitio para un struct de información más
     {
         perror("Error en ftruncate()");
         exit(EXIT_FAILURE);
@@ -203,7 +261,7 @@ int main(int argc, char **argv)
     // Mapeamos la memoria compartida entre los procesos
     cuenta = (int *)mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, fd_cuenta, 0);
     buffer = (int *)mmap(NULL, sizeof(int) * TAM_BUFFER, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, fd_buffer, 0);
-    vector_info_procesos = (info_proceso *)mmap(NULL, sizeof(int) * TAM_BUFFER, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, fd_pids, 0);
+    vector_info_procesos = (info_proceso *)mmap(NULL, fd_pids_info.st_size + sizeof(info_proceso), PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, fd_pids, 0);
 
     if (cuenta == MAP_FAILED || buffer == MAP_FAILED || vector_info_procesos == MAP_FAILED)
     {
@@ -216,6 +274,9 @@ int main(int argc, char **argv)
         *cuenta = 0;
     }
 
+    vector_info_procesos[fd_pids_info.st_size / sizeof(info_proceso)].pid = getpid();
+    vector_info_procesos[fd_pids_info.st_size / sizeof(info_proceso)].tipo = argv[1][1] == 'c' ? CONSUMIDOR : PRODUCTOR;
+
     if (argv[1][1] == 'c')
     {
         consumidor();
@@ -227,8 +288,11 @@ int main(int argc, char **argv)
 
     munmap(buffer, sizeof(int) * TAM_BUFFER);
     munmap(cuenta, sizeof(int));
+    munmap(vector_info_procesos, fd_pids_info.st_size + sizeof(info_proceso));
 
-    shm_unlink();
+    shm_unlink("cuenta"); // No se eliminará el archivo hasta que todos los procesos lo hayan cerrado
+    shm_unlink("buffer");
+    shm_unlink("pids");
 
     exit(EXIT_SUCCESS);
 }
