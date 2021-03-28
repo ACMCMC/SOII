@@ -80,7 +80,13 @@ void imprimir_buffer()
 // Funcion sleep() de Tanenbaum. El proceso se envia a si mismo una senal SIGSTOP
 void dormir()
 {
-    kill(getpid(), SIGSTOP);
+    sigset_t set;
+    sigfillset(&set);
+    sigdelset(&set, SIGCONT);
+    sigprocmask(SIG_SETMASK, &set, NULL);
+    pause();
+    sigemptyset(&set);
+    sigprocmask(SIG_SETMASK, &set, NULL);
 }
 
 // Funcion wakeup() de Tanenbaum. Le envia al proceso especificado la senal SIGCONT
@@ -234,6 +240,22 @@ void consumidor()
 int main(int argc, char **argv)
 {
     struct stat fd_cuenta_info;
+    /*if (shm_unlink(NOMBRE_OBJETO_CUENTA)) // No se eliminara el objeto hasta que todos los procesos lo hayan cerrado
+    {
+        perror("Error en shm_unlink()");
+    }
+    if (shm_unlink(NOMBRE_OBJETO_BUFFER))
+    {
+        perror("Error en shm_unlink()");
+    }
+    if (shm_unlink(NOMBRE_OBJETO_PIDS))
+    {
+        perror("Error en shm_unlink()");
+    }
+    if (shm_unlink(NOMBRE_OBJETO_CUENTA_PIDS))
+    {
+        perror("Error en shm_unlink()");
+    }*/
 
     printf("MI PID: %d\n", getpid()); // Imprimimos el PID de este proceso por pantalla
 
