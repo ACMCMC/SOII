@@ -178,6 +178,10 @@ En cambio, el productor produjo la siguiente salida (de nuevo, recortada):
         | 921 | 0   | 494 | 24  | 0   | 0   | 0   | 0   |
         -------------------------------------------------
 \end{lstlisting}
+
+En las salidas, puede apreciarse claramente la aparición del fenómeno de las carreras críticas. Por ejemplo, una vez que el productor despierta al consumidor, y éste empieza a consumir, el consumidor lee que la variable \texttt{cuenta} es igual a 3, y extrae el número 226, y decrementa \texttt{cuenta} a 2. Al mismo tiempo, el productor lee el 3 y lo incrementa a 4, introduciendo el 99. Puede verse que el consumidor es quien gana en la carrera crítica, ya que posteriormente el consumidor lee el elemento 2 del buffer, y no el 4, por lo que \texttt{cuenta} debía valer 2. Del mismo modo, el productor inserta el 494 en la posición 3, ya que lee el 2 que había escrito el consumidor.
+
+Las carreras críticas se van sucediendo a lo largo de la ejecución de los dos procesos, del mismo modo que acabo de explicar.
     
 \section{Comentarios adicionales}
 
