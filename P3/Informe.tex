@@ -1,0 +1,192 @@
+\documentclass[a4paper]{article}
+
+\usepackage[spanish]{babel}
+\usepackage{listings}
+\usepackage[utf8]{inputenc}
+\usepackage{titling}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{xcolor}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage[toc,page]{appendix}
+\geometry{a4paper, margin=7em}
+
+
+\lstset{
+    frame=single,
+    breaklines=true,
+    numbers=left,
+    keywordstyle=\color{blue},
+    numbersep=15pt,
+    numberstyle=,
+    basicstyle=\linespread{1.5}\selectfont\ttfamily,
+    commentstyle=\color{gray},
+    stringstyle=\color{orange},
+    identifierstyle=\color{green!40!black},
+}
+
+%%\setlength{\parindent}{4em}
+\setlength{\parindent}{0em}
+\setlength{\parskip}{0.8em}
+    
+%%\renewcommand{\familydefault}{phv} %%Seleccionamos Helvetica
+    
+\lstdefinestyle{console}
+{
+    numbers=left,
+    backgroundcolor=\color{violet},
+    %%belowcaptionskip=1\baselineskip,
+    breaklines=true,
+    %%xleftmargin=\parindent,
+    %%showstringspaces=false,
+    basicstyle=\footnotesize\ttfamily,
+    %%keywordstyle=\bfseries\color{green!40!black},
+    %%commentstyle=\itshape\color{green},
+    %%identifierstyle=\color{blue},
+    %%stringstyle=\color{orange},
+    basicstyle=\scriptsize\color{white}\ttfamily,
+}
+    
+\title{Problema del productor-consumidor}
+\author{Aldán Creo Mariño}
+    
+    
+\pagestyle{fancy}
+\fancyfoot[R]{\thepage}
+\fancyfoot[C]{}
+\makeatletter
+\let\runauthor\@author
+\let\runtitle\@title
+\makeatother
+\fancyhead[L]{\runauthor}
+\fancyhead[C]{SOI}
+\fancyhead[R]{Práctica 3}
+    
+\begin{document}
+\maketitle
+
+\section{Código vulnerable a la aparición de carreras críticas}
+
+\subsection{Desarrollo del código}
+
+Para desarrollar el código de este apartado, me he basado en la plantilla que se incluye en la presentación de la asignatura.
+
+He creado un mismo archivo (\texttt{1.c}), que contiene los códigos del productor y del consumidor. Desde el \texttt{main} llamo a la función adecuada, en función del argumento pasado por línea de comandos (\texttt{-c}, para consumidor; o \texttt{-p}, para productor).
+
+Antes de ello, en el \texttt{main}, creo una serie de objetos anónimos compartidos en memoria con la función \texttt{shm\_open()}, que devuelve un descriptor de archivo para hacer referencia al mismo. La diferencia entre un objeto anónimo en memoria y un fichero normal es que el objeto anónimo en memoria nunca se respalda en memoria secundaria (es decir, el disco duro). De esta forma, se puede compartir una especie de fichero, pero sin necesidad de crearlo. Estos objetos los uso para crear un mapeo compartido con \texttt{mmap()}.
+
+Más concretamente, creo los siguientes mapeos de memoria compartida:
+
+\begin{itemize}
+    \item La variable \texttt{cuenta}.
+    \item El buffer para almacenar los ítems por procesar (en orden LIFO, como una pila).
+    \item Una lista donde guardo la información sobre los procesos que están participando actualmente en la generación de consumición de ítems. Cada elemento de la lista guarda información sobre el tipo de proceso (si es consumidor, productor, o si ya acabado sus funciones), y su PID. Un productor puede recorrer la lista para encontrar a un consumidor que despertar (al que referenciará usando el PID), y viceversa. La lista nunca decrece, porque cuando un proceso acaba su ejecución, simplemente se marca como inactivo. En este apartado de la práctica, la lista puede ser prescindible, pero he decidido incluirla para poder generalizar el código posteriormente a un número arbitrario de productores y consumidores.
+    \item Una variable que mantiene la cuenta del número de elementos que hay en la lista compartida. Esto lo uso para poder ajustar dinámicamente el tamaño mapeado de la lista en los distintos procesos, ya que no llega con mapearla al principio, ya que durante la ejecución del programa puede ir creciendo si aparecen procesos nuevos. El tamaño debe ir cambiando dinámicamente en todos los procesos.
+\end{itemize}
+
+En mi programa, por lo tanto, se pueden dar carreras críticas en todas las variables compartidas que he comentado. Por ejemplo, se podría dar una carrera crítica sobre \texttt{cuenta} si dos procesos intentan incrementar la variable al mismo tiempo, pero a uno de ellos se le expropia el uso de la CPU justo cuando acaba de leer la variable y aún no la escribió de vuelta, y el otro proceso realiza la operación completa. En ese caso, uno de los incrementos se perdería. Esta misma lógica se puede aplicar para el resto de variables y estructuras de memoria compartidas. La fórmula para solucionarlo es recurrir a la exclusión mutua, pero eso no lo haremos en este apartado, ya que precisamente se trata de observar la aparición de carreras críticas.
+
+\subsection{Ejecución}
+
+El código lo he compilado con \texttt{gcc -O0 -lrt}. En una instancia de un shell, ejecuté el productor, y en otra, al consumidor.
+
+\subsection{Ejecución añadiendo \texttt{sleeps}}
+
+Dado que en la ejecución normal no llegué a apreciar la aparición de carreras críticas, introduje un \texttt{sleep(1)} a la hora de incrementar el contador del buffer, para incrementar la probabilidad de que se den carreras críticas.
+
+EL código tomó, por tanto, la siguiente forma:
+
+\begin{lstlisting}[language=C]
+void productor()
+{
+    int num_elementos_restantes; // El numero de elementos que faltan por producir
+    int item;                    // El item que estamos produciendo actualmente
+    int cuenta_intermedio;
+
+    for (num_elementos_restantes = 0; num_elementos_restantes < NUM_ELEMENTOS_TOTALES; num_elementos_restantes++)
+    {
+        item = producir();
+        if (*cuenta == TAM_BUFFER)
+        {
+            dormir();
+        }
+        insertar_item_buffer(item);
+        printf("(P) Inserto: %d\n", item);
+        cuenta_intermedio = (*cuenta) + 1;
+        sleep(1);
+        (*cuenta) = cuenta_intermedio;
+        imprimir_buffer();
+        if (*cuenta == 1)
+        {
+            printf("(P) Voy a despertar a C\n");
+            despertar(get_pid_consumidor());
+        }
+    }
+    printf("(P) He acabado!\n");
+}
+\end{lstlisting}
+
+Los cambios se encuentran en las líneas 16, 17, y 18. El cambio en el caso del consumidor es análogo, así que no incluyo de nuevo el código.
+
+En este caso, las carreras críticas se apreciaron rápidamente. En consola se produjo la siguiente salida para el consumidor (la he recortado, por brevedad):
+
+\begin{lstlisting}[language=]
+(C) Saco: 226
+        -------------------------------------------------
+        | 921 | 159 | 0   | 99  | 0   | 0   | 0   | 0   |
+        -------------------------------------------------
+        
+(C) Saco: 159
+        -------------------------------------------------
+        | 921 | 0   | 494 | 24  | 0   | 0   | 0   | 0   |
+        -------------------------------------------------
+\end{lstlisting}
+
+En cambio, el productor produjo la siguiente salida (de nuevo, recortada):
+
+\begin{lstlisting}[language=]
+(P) Inserto: 921
+        -------------------------------------------------
+        | 921 | 0   | 0   | 0   | 0   | 0   | 0   | 0   |
+        -------------------------------------------------
+
+(P) Voy a despertar a C
+(P) Inserto: 159
+        -------------------------------------------------
+        | 921 | 159 | 0   | 0   | 0   | 0   | 0   | 0   |
+        -------------------------------------------------
+
+(P) Inserto: 226
+        -------------------------------------------------
+        | 921 | 159 | 226 | 0   | 0   | 0   | 0   | 0   |
+        -------------------------------------------------
+
+(P) Inserto: 99
+        -------------------------------------------------
+        | 921 | 159 | 0   | 99  | 0   | 0   | 0   | 0   |
+        -------------------------------------------------
+
+(P) Inserto: 494
+        -------------------------------------------------
+        | 921 | 0   | 494 | 99  | 0   | 0   | 0   | 0   |
+        -------------------------------------------------
+
+(P) Inserto: 24
+        -------------------------------------------------
+        | 921 | 0   | 494 | 24  | 0   | 0   | 0   | 0   |
+        -------------------------------------------------
+\end{lstlisting}
+    
+\section{Comentarios adicionales}
+
+Pese a que los códigos aparecen recogidos en los anexos, he decidido incluírlos también como archivos separados en la entrega.
+    
+\begin{appendices} 
+\section{\LARGE \textbf{Apartado 1}}\label{anexo1}
+\lstinputlisting[language=C]{1.c}
+    
+\end{appendices}
+
+\end{document}
