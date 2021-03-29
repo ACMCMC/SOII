@@ -52,7 +52,7 @@ info_proceso *vector_info_procesos; // La direccion donde tenemos mapeada la lis
 void imprimir_buffer()
 {
     int i;
-    printf("\n\t-");
+    printf("\t-");
     for (i = 0; i < TAM_BUFFER; i++)
     {
         printf("------");
@@ -74,7 +74,7 @@ void imprimir_buffer()
     {
         printf("------");
     }
-    printf("\n");
+    printf("\n\n");
 }
 
 // Funcion sleep() de Tanenbaum. El proceso se envia a si mismo una senal SIGSTOP
@@ -184,7 +184,6 @@ void productor()
 {
     int num_elementos_restantes; // El numero de elementos que faltan por producir
     int item;                    // El item que estamos produciendo actualmente
-    int cuenta_intermedio;
 
     for (num_elementos_restantes = 0; num_elementos_restantes < NUM_ELEMENTOS_TOTALES; num_elementos_restantes++)
     {
@@ -195,9 +194,7 @@ void productor()
         }
         insertar_item_buffer(item);
         printf("(P) Inserto: %d\n", item);
-        cuenta_intermedio = (*cuenta) + 1;
-        sleep(1);
-        (*cuenta) = cuenta_intermedio;
+        (*cuenta)++;
         imprimir_buffer();
         if (*cuenta == 1)
         {
@@ -213,7 +210,6 @@ void consumidor()
 {
     int num_elementos_restantes; // El numero de elementos que faltan por consumir
     int item;                    // El item que estamos consumiendo actualmente
-    int cuenta_intermedio;
 
     for (num_elementos_restantes = 0; num_elementos_restantes < NUM_ELEMENTOS_TOTALES; num_elementos_restantes++)
     {
@@ -223,9 +219,7 @@ void consumidor()
         }
         item = sacar_item_buffer();
         printf("(C) Saco: %d\n", item);
-        cuenta_intermedio = (*cuenta) - 1;
-        sleep(1);
-        (*cuenta) = cuenta_intermedio;
+        (*cuenta)++;
         imprimir_buffer();
         if (*cuenta == (TAM_BUFFER - 1))
         {
