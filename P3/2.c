@@ -15,10 +15,7 @@
 #define NUM_CONS 1
 #define NUM_ELEMENTOS_TOTALES 30
 #define TAM_BUFFER 8
-#define NOMBRE_OBJETO_BUFFER "buffer"
-#define NOMBRE_OBJETO_PIDS "pids"
-#define NOMBRE_OBJETO_CUENTA "cuenta"
-#define NOMBRE_OBJETO_CUENTA_PIDS "cuenta_pids"
+#define NOMBRE_OBJETO_BUFFER "buffer_2"
 
 // Codigos de color para formatear la salida en consola
 #define ANSI_COLOR_RED "\x1b[31m"
@@ -30,7 +27,7 @@
 #define ANSI_COLOR_RESET "\x1b[0m"
 
 int *buffer;   // El buffer compartido de memoria
-int fd_buffer; // Descriptor de archivo del objetos anonimo compartido en memoria, que se crea con shm_open()
+int fd_buffer; // Descriptor de archivo del objeto anonimo compartido en memoria, que se crea con shm_open()
 
 sem_t *empty, *mutex, *full, *num_procesos; // Variables semaforo
 
@@ -93,7 +90,6 @@ void productor()
 {
     int num_elementos_restantes; // El numero de elementos que faltan por producir
     int item;                    // El item que estamos produciendo actualmente
-    int cuenta_intermedio;
 
     for (num_elementos_restantes = 0; num_elementos_restantes < NUM_ELEMENTOS_TOTALES; num_elementos_restantes++)
     {
@@ -116,7 +112,6 @@ void consumidor()
 {
     int num_elementos_restantes; // El numero de elementos que faltan por consumir
     int item;                    // El item que estamos consumiendo actualmente
-    int cuenta_intermedio;
 
     for (num_elementos_restantes = 0; num_elementos_restantes < NUM_ELEMENTOS_TOTALES; num_elementos_restantes++)
     {
@@ -240,7 +235,7 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
 
-    sem_post(num_procesos);
+    sem_post(num_procesos); // Incrementamos el semaforo que lleva la cuenta del numero de procesos
 
     if (argv[1][1] == 'c')
     {
@@ -251,9 +246,9 @@ int main(int argc, char **argv)
         productor();
     }
 
-    sem_wait(num_procesos);
+    sem_wait(num_procesos); // Decrementamos el semaforo que lleva la cuenta del numero de procesos. Si este era el ultimo proceso, obtiene el uso exclusivo del semaforo (ahora vale 0)
 
-    sem_getvalue(num_procesos, &valor_semaforo_num_procesos);
+    sem_getvalue(num_procesos, &valor_semaforo_num_procesos); // Leemos el valor del semaforo
 
     if (munmap(buffer, sizeof(int) * TAM_BUFFER)) // Deshacemos los mapeos de memoria
     {

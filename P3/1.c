@@ -12,10 +12,10 @@
 #define MAX_SLEEP_CONSUMIDOR 3
 #define NUM_ELEMENTOS_TOTALES 30
 #define TAM_BUFFER 8
-#define NOMBRE_OBJETO_BUFFER "buffer"
-#define NOMBRE_OBJETO_PIDS "pids"
-#define NOMBRE_OBJETO_CUENTA "cuenta"
-#define NOMBRE_OBJETO_CUENTA_PIDS "cuenta_pids"
+#define NOMBRE_OBJETO_BUFFER "buffer_1"
+#define NOMBRE_OBJETO_PIDS "pids_1"
+#define NOMBRE_OBJETO_CUENTA "cuenta_1"
+#define NOMBRE_OBJETO_CUENTA_PIDS "cuenta_pids_1"
 
 // Codigos de color para formatear la salida en consola
 #define ANSI_COLOR_RED "\x1b[31m"
@@ -225,22 +225,6 @@ void consumidor()
 int main(int argc, char **argv)
 {
     struct stat fd_cuenta_info;
-    /*if (shm_unlink(NOMBRE_OBJETO_CUENTA)) // No se eliminara el objeto hasta que todos los procesos lo hayan cerrado
-    {
-        perror("Error en shm_unlink()");
-    }
-    if (shm_unlink(NOMBRE_OBJETO_BUFFER))
-    {
-        perror("Error en shm_unlink()");
-    }
-    if (shm_unlink(NOMBRE_OBJETO_PIDS))
-    {
-        perror("Error en shm_unlink()");
-    }
-    if (shm_unlink(NOMBRE_OBJETO_CUENTA_PIDS))
-    {
-        perror("Error en shm_unlink()");
-    }*/
 
     printf("MI PID: %d\n", getpid()); // Imprimimos el PID de este proceso por pantalla
 
