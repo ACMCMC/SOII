@@ -10,8 +10,6 @@
 
 #define MAX_SLEEP_PRODUCTOR 2
 #define MAX_SLEEP_CONSUMIDOR 3
-#define NUM_PRODS 1
-#define NUM_CONS 1
 #define NUM_ELEMENTOS_TOTALES 30
 #define TAM_BUFFER 8
 #define NOMBRE_OBJETO_BUFFER "buffer"
