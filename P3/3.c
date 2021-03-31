@@ -11,8 +11,8 @@
 
 #define MAX_SLEEP_PRODUCTOR 3
 #define MAX_SLEEP_CONSUMIDOR 3
-#define NUM_PRODUCTORES 1
-#define NUM_CONSUMIDORES 1
+#define NUM_PRODUCTORES 2
+#define NUM_CONSUMIDORES 2
 #define NUM_ELEMENTOS_TOTALES 30
 #define TAM_BUFFER 8
 
@@ -92,6 +92,7 @@ void productor()
         sem_wait(mutex);
         printf("(C) Adquiero el mutex\n");
         insertar_item_buffer(item);
+        (*cuenta)++;
         printf("(P) Inserto: %d\n", item);
         imprimir_buffer();
         printf("(C) Libero el mutex\n");
@@ -113,6 +114,7 @@ void consumidor()
         sem_wait(mutex);
         printf("(C) Adquiero el mutex\n");
         item = sacar_item_buffer();
+        (*cuenta)--;
         printf("(C) Saco: %d\n", item);
         imprimir_buffer();
         printf("(C) Libero el mutex\n");
@@ -132,7 +134,7 @@ int main(int argc, char **argv)
     printf("MI PID: %d\n", getpid()); // Imprimimos el PID de este proceso por pantalla
 
     // Comprobamos si se ha invocado correctamente al programa
-    if (!(argc == 2 && (strncmp("-r", argv[1], 2) == 0)) || argc == 1)
+    if (!(argc == 2 && (strncmp("-r", argv[1], 2) == 0)) && argc != 1)
     {
         fprintf(stderr, "Formato: %s [-r, para reiniciar]\n", argv[0]);
         exit(EXIT_SUCCESS);
@@ -200,6 +202,8 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
 
+    sem_post(num_procesos); // Incrementamos el semaforo que lleva la cuenta del numero de procesos
+
     *cuenta = 0; // Inicializamos la variable cuenta a 0. Debería venir ya inicializada, pero creo que es buena practica asegurarnos.
 
     for ((i = 0, pid = -1); i < NUM_PRODUCTORES && pid != 0; i++)
@@ -211,6 +215,7 @@ int main(int argc, char **argv)
         }
         else if (pid == 0)
         { // Este es el hijo
+            sem_post(num_procesos); // Incrementamos el semaforo que lleva la cuenta del numero de procesos
             productor();
         }
     }
@@ -223,11 +228,11 @@ int main(int argc, char **argv)
         }
         else if (pid == 0)
         { // Este es el hijo
+            sem_post(num_procesos); // Incrementamos el semaforo que lleva la cuenta del numero de procesos
             consumidor();
         }
     }
 
-    sem_post(num_procesos); // Incrementamos el semaforo que lleva la cuenta del numero de procesos
 
     sem_wait(num_procesos); // Decrementamos el semaforo que lleva la cuenta del numero de procesos. Si este era el ultimo proceso, obtiene el uso exclusivo del semaforo (ahora vale 0)
 
