@@ -32,7 +32,7 @@
 int *buffer;   // El buffer compartido de memoria
 int fd_buffer; // Descriptor de archivo del objetos anonimo compartido en memoria, que se crea con shm_open()
 
-sem_t *empty, *mutex, *full, *mutex_contador_lista; // Variables semaforo
+sem_t *empty, *mutex, *full, *num_procesos; // Variables semaforo
 
 // Imprime por pantalla una representacion grafica del buffer. La parte ocupada de la lista se imprime en rojo, la parte libre en azul.
 void imprimir_buffer()
@@ -47,14 +47,7 @@ void imprimir_buffer()
     printf("\n\t|");
     for (i = 0; i < TAM_BUFFER; i++)
     {
-        if (i < cuenta)
-        {
-            printf(ANSI_COLOR_RED " %-3d " ANSI_COLOR_RESET "|", buffer[i]);
-        }
-        else
-        {
-            printf(ANSI_COLOR_BLUE " %-3d " ANSI_COLOR_RESET "|", buffer[i]);
-        }
+        printf(ANSI_COLOR_BLUE " %-3d " ANSI_COLOR_RESET "|", buffer[i]);
     }
     printf("\n\t-");
     for (i = 0; i < TAM_BUFFER; i++)
@@ -79,8 +72,8 @@ int sacar_item_buffer()
     int cuenta;
     sem_getvalue(full, &cuenta); // No garantiza que el valor este actualizado, pero llamamos a esta funcion desde una zona que tiene exclusion mutua.
     printf("Esto va %d\n", cuenta);
-    int elem = buffer[cuenta - 1];
-    buffer[cuenta - 1] = 0;
+    int elem = buffer[cuenta];
+    buffer[cuenta] = 0;
     return elem;
 }
 
@@ -113,8 +106,8 @@ void productor()
         printf("(P) Inserto: %d\n", item);
         sleep(1);
         imprimir_buffer();
-        sem_post(mutex);
         sem_post(full);
+        sem_post(mutex);
     }
     printf("(P) He acabado!\n");
 }
@@ -144,11 +137,11 @@ void consumidor()
 int main(int argc, char **argv)
 {
     struct stat fd_buffer_info;
-    int semaforos_creados; // Flag para saber si hay que cerrar los semaforos (porque los crea este proceso)
-    /*sem_unlink("/SOII/empty");
-    sem_unlink("/SOII/full");
-    sem_unlink("/SOII/mutex");
-    sem_unlink("/SOII/mutex_contador_lista");*/
+    int valor_semaforo_num_procesos;
+    /*sem_unlink("/empty");
+    sem_unlink("/full");
+    sem_unlink("/mutex");
+    sem_unlink("/num_procesos");*/
     /*if (shm_unlink(NOMBRE_OBJETO_BUFFER))
     {
         perror("Error en shm_unlink()");
@@ -159,65 +152,78 @@ int main(int argc, char **argv)
     // Comprobamos si se ha invocado correctamente al programa
     if (!(argc == 2 || (argc == 3 && (strncmp("-r", argv[2], 2) == 0))) || (strncmp("-c", argv[1], 2) != 0 && strncmp("-p", argv[1], 2) != 0))
     {
-        fprintf(stderr, "Formato: %s [-c, para consumidor; -p, para productor] [-r, para reiniciar los semaforos]\n", argv[0]);
+        fprintf(stderr, "Formato: %s [-c, para consumidor; -p, para productor] [-r, para reiniciar]\n", argv[0]);
         exit(EXIT_SUCCESS);
     }
 
     srand(clock()); // Semilla del generador aleatorio de numeros
 
-    // Opcion de reiniciar los semaforos
-    if (argc == 3 && (strncmp("-r", argv[2], 2) == 0)) {
-        if (sem_unlink("/SOII/empty"))
+    // Opcion de reiniciar
+    if (argc == 3 && (strncmp("-r", argv[2], 2) == 0))
+    {
+        if (sem_unlink("/empty"))
         {
             perror("Error en sem_unlink()");
+            exit(EXIT_FAILURE);
         }
-        if (sem_unlink("/SOII/full"))
+        if (sem_unlink("/full"))
         {
             perror("Error en sem_unlink()");
+            exit(EXIT_FAILURE);
         }
-        if (sem_unlink("/SOII/mutex"))
+        if (sem_unlink("/mutex"))
         {
             perror("Error en sem_unlink()");
+            exit(EXIT_FAILURE);
         }
-        if (sem_unlink("/SOII/mutex_contador_lista"))
+        if (sem_unlink("/num_procesos"))
         {
             perror("Error en sem_unlink()");
+            exit(EXIT_FAILURE);
+        }
+
+        if (shm_unlink(NOMBRE_OBJETO_BUFFER))
+        {
+            perror("Error en shm_unlink()");
+            exit(EXIT_FAILURE);
         }
     }
 
     // Generamos los semaforos. O_CREAT no tiene efecto si el semaforo ya estaba creado.
-    mutex = sem_open("/SOII/mutex", 0);
+    mutex = sem_open("/mutex", 0);
     // Si la funcion falla, es porque los semaforos no estan creados, asi que los creamos
     if (mutex == SEM_FAILED)
     {
-        semaforos_creados = 1;
         printf("Semaforos creados.\n");
-        mutex = sem_open("/SOII/mutex", O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 1); // Usamos O_CREAT | O_EXCL porque podria haber dos procesos que detectaran que los semaforos no existen al mismo tiempo. De esta forma, solo uno de ellos los creara y el otro saldra con codigo de error.
-        mutex_contador_lista = sem_open("/SOII/mutex_contador_lista", O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 1);
-        empty = sem_open("/SOII/empty", O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, TAM_BUFFER);
-        full = sem_open("/SOII/full", O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 0);
+        mutex = sem_open("/mutex", O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 1); // Usamos O_CREAT | O_EXCL porque podria haber dos procesos que detectaran que los semaforos no existen al mismo tiempo. De esta forma, solo uno de ellos los creara y el otro saldra con codigo de error.
+        num_procesos = sem_open("/num_procesos", O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 0);
+        empty = sem_open("/empty", O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, TAM_BUFFER);
+        full = sem_open("/full", O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 0);
     }
     else
     {
         // Abrimos el resto de semaforos normalmente, ya que estaban creados de antes
-        semaforos_creados = 0;
-        mutex_contador_lista = sem_open("/SOII/mutex_contador_lista", 0);
-        empty = sem_open("/SOII/empty", 0);
-        full = sem_open("/SOII/full", 0);
+        num_procesos = sem_open("/num_procesos", 0);
+        empty = sem_open("/empty", 0);
+        full = sem_open("/full", 0);
     }
 
-    if (empty == SEM_FAILED || full == SEM_FAILED || mutex == SEM_FAILED || mutex_contador_lista == SEM_FAILED)
+    if (empty == SEM_FAILED || full == SEM_FAILED || mutex == SEM_FAILED || num_procesos == SEM_FAILED)
     {
         perror("Error en sem_open()");
         exit(EXIT_FAILURE);
     }
 
-    fd_buffer = shm_open(NOMBRE_OBJETO_BUFFER, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
-
-    if (!fd_buffer)
+    fd_buffer = shm_open(NOMBRE_OBJETO_BUFFER, O_RDWR, S_IRUSR | S_IWUSR);
+    if (fd_buffer==-1) // Si falla, es porque el objeto no estaba creado de antes, asi que lo creamos nosotros
     {
-        perror("Error en shm_open()");
-        exit(EXIT_FAILURE);
+        // Usamos O_CREAT | O_EXCL porque podria haber dos procesos que detectaran que el objeto no existe al mismo tiempo. De esta forma, solo uno de ellos lo creara y el otro saldra con codigo de error.
+        fd_buffer = shm_open(NOMBRE_OBJETO_BUFFER, O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR);
+        if (fd_buffer==-1)
+        {
+            perror("Error en shm_open()");
+            exit(EXIT_FAILURE);
+        }
     }
 
     if (fstat(fd_buffer, &fd_buffer_info)) // Leemos la informacion sobre fd_cuenta
@@ -243,6 +249,8 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
 
+    sem_post(num_procesos);
+
     if (argv[1][1] == 'c')
     {
         consumidor();
@@ -252,34 +260,37 @@ int main(int argc, char **argv)
         productor();
     }
 
+    sem_wait(num_procesos);
+
+    sem_getvalue(num_procesos, &valor_semaforo_num_procesos);
+
     if (munmap(buffer, sizeof(int) * TAM_BUFFER)) // Deshacemos los mapeos de memoria
     {
         perror("Error en munmap()");
         // No salimos con EXIT_FAILURE, ya que nos compensa seguir intentando desmapear el resto de memoria
     }
 
-    if (shm_unlink(NOMBRE_OBJETO_BUFFER))
-    {
-        perror("Error en shm_unlink()");
-    }
-
     // Cerramos los semaforos. No se cerraran realmente hasta que todos los procesos hayan dejado de usarlos.
-    if (semaforos_creados) // Si este proceso es el que crea los semaforos, entonces los desvincula tambien.
+    if (valor_semaforo_num_procesos==0) // Si este proceso es el ultimo (y estamos seguros de que lo es, porque si vale 0 hemos adquirido el mutex sobre el semaforo), eliminamos los semaforos y el objeto compartido de memoria.
     {
+        if (shm_unlink(NOMBRE_OBJETO_BUFFER))
+        {
+            perror("Error en shm_unlink()");
+        }
         printf("Semaforos desvinculados.\n");
-        if (sem_unlink("/SOII/empty"))
+        if (sem_unlink("/empty"))
         {
             perror("Error en sem_unlink()");
         }
-        if (sem_unlink("/SOII/full"))
+        if (sem_unlink("/full"))
         {
             perror("Error en sem_unlink()");
         }
-        if (sem_unlink("/SOII/mutex"))
+        if (sem_unlink("/mutex"))
         {
             perror("Error en sem_unlink()");
         }
-        if (sem_unlink("/SOII/mutex_contador_lista"))
+        if (sem_unlink("/num_procesos"))
         {
             perror("Error en sem_unlink()");
         }
@@ -297,7 +308,7 @@ int main(int argc, char **argv)
     {
         perror("Error en sem_close");
     }
-    if (sem_close(mutex_contador_lista))
+    if (sem_close(num_procesos))
     {
         perror("Error en sem_close");
     }

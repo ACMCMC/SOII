@@ -60,14 +60,7 @@ void imprimir_buffer()
     printf("\n\t|");
     for (i = 0; i < TAM_BUFFER; i++)
     {
-        if (i < *cuenta)
-        {
-            printf(ANSI_COLOR_RED " %-3d " ANSI_COLOR_RESET "|", buffer[i]);
-        }
-        else
-        {
-            printf(ANSI_COLOR_BLUE " %-3d " ANSI_COLOR_RESET "|", buffer[i]);
-        }
+        printf(ANSI_COLOR_RED " %-3d " ANSI_COLOR_RESET "|", buffer[i]);
     }
     printf("\n\t-");
     for (i = 0; i < TAM_BUFFER; i++)
@@ -268,7 +261,7 @@ int main(int argc, char **argv)
     fd_pids = shm_open(NOMBRE_OBJETO_PIDS, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
     fd_cuenta_pids = shm_open(NOMBRE_OBJETO_CUENTA_PIDS, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
 
-    if (!fd_buffer || !fd_cuenta || !fd_pids || !fd_cuenta_pids)
+    if (fd_buffer==-1 || fd_cuenta==-1 || fd_pids==-1 || fd_cuenta_pids==-1)
     {
         perror("Error en shm_open()");
         exit(EXIT_FAILURE);
