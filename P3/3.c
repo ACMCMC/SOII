@@ -11,14 +11,10 @@
 
 #define MAX_SLEEP_PRODUCTOR 3
 #define MAX_SLEEP_CONSUMIDOR 3
-#define NUM_PRODS 1
-#define NUM_CONS 1
+#define NUM_PRODUCTORES 1
+#define NUM_CONSUMIDORES 1
 #define NUM_ELEMENTOS_TOTALES 30
 #define TAM_BUFFER 8
-#define NOMBRE_OBJETO_BUFFER "buffer"
-#define NOMBRE_OBJETO_PIDS "pids"
-#define NOMBRE_OBJETO_CUENTA "cuenta"
-#define NOMBRE_OBJETO_CUENTA_PIDS "cuenta_pids"
 
 // Codigos de color para formatear la salida en consola
 #define ANSI_COLOR_RED "\x1b[31m"
@@ -29,16 +25,15 @@
 #define ANSI_COLOR_CYAN "\x1b[36m"
 #define ANSI_COLOR_RESET "\x1b[0m"
 
-int *buffer;   // El buffer compartido de memoria
-int fd_buffer; // Descriptor de archivo del objetos anonimo compartido en memoria, que se crea con shm_open()
+int *buffer; // El buffer compartido de memoria
+int *cuenta; // La variable cuenta
 
 sem_t *empty, *mutex, *full, *num_procesos; // Variables semaforo
 
 // Imprime por pantalla una representacion grafica del buffer. La parte ocupada de la lista se imprime en rojo, la parte libre en azul.
 void imprimir_buffer()
 {
-    int i, cuenta;
-    sem_getvalue(full, &cuenta); // No garantiza que el valor este actualizado, pero no es una cuestion critica. Aparte, llamamos a esta funcion desde una zona que tiene exclusion mutua
+    int i;
     printf("\t-");
     for (i = 0; i < TAM_BUFFER; i++)
     {
@@ -60,18 +55,14 @@ void imprimir_buffer()
 // Inserta un item en el buffer
 void insertar_item_buffer(int item)
 {
-    int cuenta;
-    sem_getvalue(full, &cuenta); // No garantiza que el valor este actualizado, pero llamamos a esta funcion desde una zona que tiene exclusion mutua.
-    buffer[cuenta] = item;
+    buffer[*cuenta] = item;
 }
 
 // Saca un item del buffer y escribe un 0 en su lugar
 int sacar_item_buffer()
 {
-    int cuenta;
-    sem_getvalue(full, &cuenta); // No garantiza que el valor este actualizado, pero llamamos a esta funcion desde una zona que tiene exclusion mutua.
-    int elem = buffer[cuenta];
-    buffer[cuenta] = 0;
+    int elem = buffer[*cuenta - 1];
+    buffer[*cuenta - 1] = 0;
     return elem;
 }
 
@@ -93,7 +84,6 @@ void productor()
 {
     int num_elementos_restantes; // El numero de elementos que faltan por producir
     int item;                    // El item que estamos produciendo actualmente
-    int cuenta_intermedio;
 
     for (num_elementos_restantes = 0; num_elementos_restantes < NUM_ELEMENTOS_TOTALES; num_elementos_restantes++)
     {
@@ -116,7 +106,6 @@ void consumidor()
 {
     int num_elementos_restantes; // El numero de elementos que faltan por consumir
     int item;                    // El item que estamos consumiendo actualmente
-    int cuenta_intermedio;
 
     for (num_elementos_restantes = 0; num_elementos_restantes < NUM_ELEMENTOS_TOTALES; num_elementos_restantes++)
     {
@@ -136,22 +125,23 @@ void consumidor()
 
 int main(int argc, char **argv)
 {
-    struct stat fd_buffer_info;
+    pid_t pid;
+    int i;
     int valor_semaforo_num_procesos;
 
     printf("MI PID: %d\n", getpid()); // Imprimimos el PID de este proceso por pantalla
 
     // Comprobamos si se ha invocado correctamente al programa
-    if (!(argc == 2 || (argc == 3 && (strncmp("-r", argv[2], 2) == 0))) || (strncmp("-c", argv[1], 2) != 0 && strncmp("-p", argv[1], 2) != 0))
+    if (!(argc == 2 && (strncmp("-r", argv[1], 2) == 0)) || argc == 1)
     {
-        fprintf(stderr, "Formato: %s [-c, para consumidor; -p, para productor] [-r, para reiniciar]\n", argv[0]);
+        fprintf(stderr, "Formato: %s [-r, para reiniciar]\n", argv[0]);
         exit(EXIT_SUCCESS);
     }
 
     srand(clock()); // Semilla del generador aleatorio de numeros
 
     // Opcion de reiniciar
-    if (argc == 3 && (strncmp("-r", argv[2], 2) == 0))
+    if (argc == 2 && (strncmp("-r", argv[1], 2) == 0))
     {
         if (sem_unlink("/empty"))
         {
@@ -171,11 +161,6 @@ int main(int argc, char **argv)
         if (sem_unlink("/num_procesos"))
         {
             perror("Error en sem_unlink()");
-            exit(EXIT_FAILURE);
-        }
-        if (shm_unlink(NOMBRE_OBJETO_BUFFER))
-        {
-            perror("Error en shm_unlink()");
             exit(EXIT_FAILURE);
         }
     }
@@ -205,53 +190,46 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
 
-    fd_buffer = shm_open(NOMBRE_OBJETO_BUFFER, O_RDWR, S_IRUSR | S_IWUSR);
-    if (fd_buffer==-1) // Si falla, es porque el objeto no estaba creado de antes, asi que lo creamos nosotros
-    {
-        // Usamos O_CREAT | O_EXCL porque podria haber dos procesos que detectaran que el objeto no existe al mismo tiempo. De esta forma, solo uno de ellos lo creara y el otro saldra con codigo de error.
-        fd_buffer = shm_open(NOMBRE_OBJETO_BUFFER, O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR);
-        if (fd_buffer==-1)
-        {
-            perror("Error en shm_open()");
-            exit(EXIT_FAILURE);
-        }
-    }
+    // Mapeamos la memoria compartida para los procesos. Ahora no hace falta un objeto anonimo compartido en memoria, ya que los hijos heredaran este mapeo que hacemos localmente.
+    buffer = (int *)mmap(NULL, sizeof(int) * TAM_BUFFER, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED, -1, 0);
+    cuenta = (int *)mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED, -1, 0);
 
-    if (fstat(fd_buffer, &fd_buffer_info)) // Leemos la informacion sobre fd_cuenta
-    {
-        perror("Error en fstat()");
-        exit(EXIT_FAILURE);
-    }
-    if (fd_buffer_info.st_size == 0) // Si fd_buffer no tiene tamano, es que lo estamos creando en este proceso.
-    {
-        if (ftruncate(fd_buffer, sizeof(int) * TAM_BUFFER) == -1)
-        {
-            perror("Error en ftruncate() para fd_buffer");
-            exit(EXIT_FAILURE);
-        }
-    }
-
-    // Mapeamos la memoria compartida entre los procesos
-    buffer = (int *)mmap(NULL, sizeof(int) * TAM_BUFFER, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, fd_buffer, 0);
-
-    if (buffer == MAP_FAILED)
+    if (buffer == MAP_FAILED || cuenta == MAP_FAILED)
     {
         perror("Error en mmap()");
         exit(EXIT_FAILURE);
     }
 
-    sem_post(num_procesos);
+    *cuenta = 0; // Inicializamos la variable cuenta a 0. Debería venir ya inicializada, pero creo que es buena practica asegurarnos.
 
-    if (argv[1][1] == 'c')
+    for ((i = 0, pid = -1); i < NUM_PRODUCTORES && pid != 0; i++)
     {
-        consumidor();
+        pid = fork();
+        if (pid < 0)
+        { // Hubo error, aún así no abortamos
+            perror("Error en fork()");
+        }
+        else if (pid == 0)
+        { // Este es el hijo
+            productor();
+        }
     }
-    else
+    for ((i = 0); i < NUM_CONSUMIDORES && pid != 0; i++)
     {
-        productor();
+        pid = fork();
+        if (pid < 0)
+        { // Hubo error, aún así no abortamos
+            perror("Error en fork()");
+        }
+        else if (pid == 0)
+        { // Este es el hijo
+            consumidor();
+        }
     }
 
-    sem_wait(num_procesos);
+    sem_post(num_procesos); // Incrementamos el semaforo que lleva la cuenta del numero de procesos
+
+    sem_wait(num_procesos); // Decrementamos el semaforo que lleva la cuenta del numero de procesos. Si este era el ultimo proceso, obtiene el uso exclusivo del semaforo (ahora vale 0)
 
     sem_getvalue(num_procesos, &valor_semaforo_num_procesos);
 
@@ -260,14 +238,14 @@ int main(int argc, char **argv)
         perror("Error en munmap()");
         // No salimos con EXIT_FAILURE, ya que nos compensa seguir intentando desmapear el resto de memoria
     }
+    if (munmap(cuenta, sizeof(int))) // Deshacemos los mapeos de memoria
+    {
+        perror("Error en munmap()");
+    }
 
     // Cerramos los semaforos. No se cerraran realmente hasta que todos los procesos hayan dejado de usarlos.
-    if (valor_semaforo_num_procesos==0) // Si este proceso es el ultimo (y estamos seguros de que lo es, porque si vale 0 hemos adquirido el mutex sobre el semaforo), eliminamos los semaforos y el objeto compartido de memoria.
+    if (valor_semaforo_num_procesos == 0) // Si este proceso es el ultimo (y estamos seguros de que lo es, porque si vale 0 hemos adquirido el mutex sobre el semaforo), eliminamos los semaforos y el objeto compartido de memoria.
     {
-        if (shm_unlink(NOMBRE_OBJETO_BUFFER))
-        {
-            perror("Error en shm_unlink()");
-        }
         printf("Semaforos desvinculados.\n");
         if (sem_unlink("/empty"))
         {
