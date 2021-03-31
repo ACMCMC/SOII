@@ -219,7 +219,7 @@ void consumidor()
         }
         item = sacar_item_buffer();
         printf("(C) Saco: %d\n", item);
-        (*cuenta)++;
+        (*cuenta)--;
         imprimir_buffer();
         if (*cuenta == (TAM_BUFFER - 1))
         {
