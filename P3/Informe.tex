@@ -230,7 +230,21 @@ Tal como tenemos escrito el código, este problema no se puede solucionar, ya qu
 
 El ejemplo descrito es análogo para el caso del productor. Por tanto, en los dos casos tendremos que encontrar una solución nueva que evite el interbloqueo y al mismo tiempo se asegure de que llevamos la cuenta de elementos del buffer de forma correcta.
 
-La solución que he tomado yo ha sido recuperar la variable compartida \texttt{cuenta} que usaba en el apartado \ref{apartado_1}. Esta variable es vulnerable a la aparición de carreras críticas, como vimos anteriormente, y precisamente poe eso, sólo se modifica dentro de la región que está regida por un mecanismo de exclusión mutua (el semáforo \texttt{mutex}).
+La solución que he tomado yo ha sido recuperar la variable compartida \texttt{cuenta} que usaba en el apartado \ref{apartado_1}. Esta variable es vulnerable a la aparición de carreras críticas, como vimos anteriormente, y precisamente por eso, sólo se modifica dentro de la región que está regida por un mecanismo de exclusión mutua (el semáforo \texttt{mutex}). De esta forma, consigo mantener la coherencia en la cuenta del buffer.
+
+El reparto del número de elementos a producir lo he realizado de acuerdo con la siguiente condición:
+
+\begin{lstlisting}[language=C]
+    i==0 ? ((NUM_ELEMENTOS_TOTALES / NUM_PRODUCTORES) + (NUM_ELEMENTOS_TOTALES % NUM_PRODUCTORES)) : (NUM_ELEMENTOS_TOTALES / NUM_PRODUCTORES)
+\end{lstlisting}
+
+Lo que hace es asignarle al primero de los procesos creados, además de la parte proporcional que le toca de ítems para producir, el resultado del módulo por el número de procesos. De esta forma, aseguro que se producen en total el mismo número de ítems que se consumen. Por ejemplo, si hay 13 elementos para producir, y hay 3 productores, al primero le tocaría producir la parte entera de la divisón más el resultado del módulo ($13/3=4.33\dots \rightarrow 4 \rightarrow 4 + (13 \% 3) \rightarrow 4 + 1 \rightarrow 5$). El resto producirán $13/3=4.33\dots \rightarrow 4$ ítems. En total, 13. La misma lógica se aplica a los consumidores.
+
+Adicionalmente a lo comentado cabe mencionar el hecho de que, al acabar todos los procesos sus funciones, el shell no muestra de vuelta el prompt. Esto se explica fácilmente, ya que el prompt se muestra cuando muere el padre, que es el primero de todos en morir, al menos en las ejecuciones que he realizado yo, ya que no tiene que realizar ningún tipo de procesamiento de datos, y por eso acaba mucho antes. Es decir, el prompt se muestra antes de que acaben el resto de los procesos, y por eso cuando muere el último de los hijos no se muestra de nuevo el prompt, dando la impresión de que nunca ha aparecido, cuando si se vuelve atrás en el registro de la consola, se puede ver que el prompt sí apareció, solo que de forma previa.
+
+\section{Código con hilos}
+
+En el guion de la práctica se indica que solo hay que comentar los apartados anteriores, así que no destacaré nada sobre este, ya que en cualquier caso se parece mucho al tercero.
 
 \section{Comentarios adicionales}
 
@@ -242,6 +256,9 @@ Pese a que los códigos aparecen recogidos en los anexos, he decidido incluírlo
     
 \section{\LARGE \textbf{Anexo 2}}\label{anexo2}
 \lstinputlisting[language=C]{2.c}
+    
+\section{\LARGE \textbf{Anexo 3}}\label{anexo3}
+\lstinputlisting[language=C]{3.c}
     
 \end{appendices}
 
