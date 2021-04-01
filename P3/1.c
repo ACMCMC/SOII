@@ -114,7 +114,6 @@ void actualizar_mapeo_lista_procesos()
 // Devuelve el PID del primer productor vivo
 pid_t get_pid_productor()
 {
-    int i;
     info_proceso *puntero;
     actualizar_mapeo_lista_procesos();                                                                // Si la lista de procesos ha crecido, actualizamos su tamano
     for (puntero = vector_info_procesos; puntero < (vector_info_procesos + pids_mapeados); puntero++) // Recorremos hasta el limite del mapeo local, asi que esta funcion no es vulnerable a carreras criticas (si la lista se expande en medio de esta funcion, no pasa nada, ya que no recorremos la parte nueva)
@@ -130,7 +129,6 @@ pid_t get_pid_productor()
 // Devuelve el PID del primer consumidor vivo
 pid_t get_pid_consumidor()
 {
-    int i;
     info_proceso *puntero;
     actualizar_mapeo_lista_procesos();                                                                // Si la lista de procesos ha crecido, actualizamos su tamano
     for (puntero = vector_info_procesos; puntero < (vector_info_procesos + pids_mapeados); puntero++) // Recorremos hasta el limite del mapeo local, asi que esta funcion no es vulnerable a carreras criticas (si la lista se expande en medio de esta funcion, no pasa nada, ya que no recorremos la parte nueva)

@@ -160,7 +160,6 @@ int main(int argc, char **argv)
     int num_elementos_productores[NUM_PRODUCTORES];
     int num_elementos_consumidores[NUM_CONSUMIDORES];
     int i;
-    int valor_semaforo_num_procesos;
 
     printf("MI PID: %d\n", getpid()); // Imprimimos el PID de este proceso por pantalla
 
@@ -247,7 +246,7 @@ int main(int argc, char **argv)
         printf("Generado el consumidor %d\n", i);
     }
 
-    // El hilo principal espera a que acaben los demás
+    // El hilo principal espera a que acaben los demas
     for (i = 0; i < NUM_PRODUCTORES; i++)
     {
         printf("ESTO VA 1\n");
