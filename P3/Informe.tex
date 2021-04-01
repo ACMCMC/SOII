@@ -82,8 +82,8 @@ Más concretamente, creo los siguientes mapeos de memoria compartida:
 \begin{itemize}
     \item La variable \texttt{cuenta}.
     \item El buffer para almacenar los ítems por procesar (en orden LIFO, como una pila).
-    \item Una lista donde guardo la información sobre los procesos que están participando actualmente en la generación de consumición de ítems. Cada elemento de la lista guarda información sobre el tipo de proceso (si es consumidor, productor, o si ya acabado sus funciones), y su PID. Un productor puede recorrer la lista para encontrar a un consumidor que despertar (al que referenciará usando el PID), y viceversa. La lista nunca decrece, porque cuando un proceso acaba su ejecución, simplemente se marca como inactivo. En este apartado de la práctica, la lista puede ser prescindible, pero he decidido incluirla para poder generalizar el código posteriormente a un número arbitrario de productores y consumidores.
-    \item Una variable que mantiene la cuenta del número de elementos que hay en la lista compartida. Esto lo uso para poder ajustar dinámicamente el tamaño mapeado de la lista en los distintos procesos, ya que no llega con mapearla al principio, ya que durante la ejecución del programa puede ir creciendo si aparecen procesos nuevos. El tamaño debe ir cambiando dinámicamente en todos los procesos.
+    \item Una lista donde guardo la información sobre los procesos que están participando actualmente en la generación de consumición de ítems. Cada elemento de la lista guarda información sobre el tipo de proceso (si es consumidor, productor, o si ya acabado sus funciones), y su PID. Un productor puede recorrer la lista para encontrar a un consumidor que despertar (al que referenciará usando el PID), y viceversa. La lista nunca decrece, porque cuando un proceso acaba su ejecución, simplemente se marca como inactivo. En este apartado de la práctica, la lista puede ser prescindible, pero he decidido incluirla para facilitar el generalizar el código posteriormente a un número arbitrario de productores y consumidores.
+    \item Una variable que mantiene la cuenta del número de elementos que hay en la lista compartida. Esto lo uso para poder ajustar dinámicamente el tamaño mapeado de la lista en los distintos procesos, ya que no llega con mapearla al principio, ya que durante la ejecución del programa puede ir creciendo si aparecen procesos nuevos (en este caso, la pareja del consumidor o el productor). El tamaño debe ir cambiando dinámicamente en todos los procesos.
 \end{itemize}
 
 En mi programa, por lo tanto, se pueden dar carreras críticas en todas las variables compartidas que he comentado. Por ejemplo, se podría dar una carrera crítica sobre \texttt{cuenta} si dos procesos intentan incrementar la variable al mismo tiempo, pero a uno de ellos se le expropia el uso de la CPU justo cuando acaba de leer la variable y aún no la escribió de vuelta, y el otro proceso realiza la operación completa. En ese caso, uno de los incrementos se perdería. Esta misma lógica se puede aplicar para el resto de variables y estructuras de memoria compartidas. La fórmula para solucionarlo es recurrir a la exclusión mutua, pero eso no lo haremos en este apartado, ya que precisamente se trata de observar la aparición de carreras críticas.
@@ -244,7 +244,7 @@ Adicionalmente a lo comentado cabe mencionar el hecho de que, al acabar todos lo
 
 \section{Código con hilos}
 
-En el guion de la práctica se indica que solo hay que comentar los apartados anteriores, así que no destacaré nada sobre este, ya que en cualquier caso se parece mucho al tercero.
+En el guion de la práctica se indica que solo hay que comentar los apartados anteriores, así que no destacaré nada sobre este, ya que en cualquier caso se parece mucho al tercero. El código está en el anexo \ref{anexo4}.
 
 \section{Comentarios adicionales}
 
@@ -259,6 +259,9 @@ Pese a que los códigos aparecen recogidos en los anexos, he decidido incluírlo
     
 \section{\LARGE \textbf{Anexo 3}}\label{anexo3}
 \lstinputlisting[language=C]{3.c}
+
+\section{\LARGE \textbf{Anexo 4}}\label{anexo4}
+\lstinputlisting[language=C]{4.c}
     
 \end{appendices}
 
