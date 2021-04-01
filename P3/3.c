@@ -11,9 +11,9 @@
 
 #define MAX_SLEEP_PRODUCTOR 3
 #define MAX_SLEEP_CONSUMIDOR 3
-#define NUM_PRODUCTORES 2
-#define NUM_CONSUMIDORES 2
-#define NUM_ELEMENTOS_TOTALES 30
+#define NUM_PRODUCTORES 4
+#define NUM_CONSUMIDORES 8
+#define NUM_ELEMENTOS_TOTALES 11
 #define TAM_BUFFER 8
 
 // Codigos de color para formatear la salida en consola
@@ -80,46 +80,70 @@ void consumir(int numero)
 }
 
 // Implementa la funcion de las diapositivas
-void productor()
+void productor(int num_elementos)
 {
     int num_elementos_restantes; // El numero de elementos que faltan por producir
     int item;                    // El item que estamos produciendo actualmente
 
-    for (num_elementos_restantes = 0; num_elementos_restantes < NUM_ELEMENTOS_TOTALES; num_elementos_restantes++)
+    for (num_elementos_restantes = 0; num_elementos_restantes < num_elementos; num_elementos_restantes++)
     {
         item = producir();
-        sem_wait(empty);
-        sem_wait(mutex);
+        if (sem_wait(empty))
+        {
+            perror("Error en sem_wait");
+        }
+        if (sem_wait(mutex))
+        {
+            perror("Error en sem_wait");
+        }
         printf("(C) Adquiero el mutex\n");
         insertar_item_buffer(item);
         (*cuenta)++;
         printf("(P) Inserto: %d\n", item);
         imprimir_buffer();
         printf("(C) Libero el mutex\n");
-        sem_post(mutex);
-        sem_post(full);
+        if (sem_post(mutex))
+        {
+            perror("Error en sem_post");
+        }
+        if (sem_post(full))
+        {
+            perror("Error en sem_post");
+        }
     }
     printf("(P) He acabado!\n");
 }
 
 // Implementa la funcion de las diapositivas
-void consumidor()
+void consumidor(int num_elementos)
 {
     int num_elementos_restantes; // El numero de elementos que faltan por consumir
     int item;                    // El item que estamos consumiendo actualmente
 
-    for (num_elementos_restantes = 0; num_elementos_restantes < NUM_ELEMENTOS_TOTALES; num_elementos_restantes++)
+    for (num_elementos_restantes = 0; num_elementos_restantes < num_elementos; num_elementos_restantes++)
     {
-        sem_wait(full);
-        sem_wait(mutex);
+        if (sem_wait(full))
+        {
+            perror("Error en sem_wait");
+        }
+        if (sem_wait(mutex))
+        {
+            perror("Error en sem_wait");
+        }
         printf("(C) Adquiero el mutex\n");
         item = sacar_item_buffer();
         (*cuenta)--;
         printf("(C) Saco: %d\n", item);
         imprimir_buffer();
         printf("(C) Libero el mutex\n");
-        sem_post(mutex);
-        sem_post(empty);
+        if (sem_post(mutex))
+        {
+            perror("Error en sem_post");
+        }
+        if (sem_post(empty))
+        {
+            perror("Error en sem_post");
+        }
         consumir(item);
     }
     printf("(C) He acabado!\n");
@@ -202,41 +226,63 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
 
-    sem_post(num_procesos); // Incrementamos el semaforo que lleva la cuenta del numero de procesos
+    if (sem_post(num_procesos)) // Incrementamos el semaforo que lleva la cuenta del numero de procesos
+    {
+        perror("Error en sem_post");
+    }
 
-    *cuenta = 0; // Inicializamos la variable cuenta a 0. Debería venir ya inicializada, pero creo que es buena practica asegurarnos.
+    *cuenta = 0; // Inicializamos la variable cuenta a 0. Deberia venir ya inicializada, pero creo que es buena practica asegurarnos.
 
     for ((i = 0, pid = -1); i < NUM_PRODUCTORES && pid != 0; i++)
     {
         pid = fork();
         if (pid < 0)
-        { // Hubo error, aún así no abortamos
+        { // Hubo error, aun asi no abortamos
             perror("Error en fork()");
         }
         else if (pid == 0)
-        { // Este es el hijo
-            sem_post(num_procesos); // Incrementamos el semaforo que lleva la cuenta del numero de procesos
-            productor();
+        {                               // Este es el hijo
+            if (sem_post(num_procesos)) // Incrementamos el semaforo que lleva la cuenta del numero de procesos
+            {
+                perror("Error en sem_post");
+            }
+            productor(i==0 ? ((NUM_ELEMENTOS_TOTALES / NUM_PRODUCTORES) + (NUM_ELEMENTOS_TOTALES % NUM_PRODUCTORES)) : (NUM_ELEMENTOS_TOTALES / NUM_PRODUCTORES));
+        }
+        else
+        {
+            printf("Generado el productor %d\n", i);
         }
     }
     for ((i = 0); i < NUM_CONSUMIDORES && pid != 0; i++)
     {
         pid = fork();
         if (pid < 0)
-        { // Hubo error, aún así no abortamos
+        { // Hubo error, aun asi no abortamos
             perror("Error en fork()");
         }
         else if (pid == 0)
-        { // Este es el hijo
-            sem_post(num_procesos); // Incrementamos el semaforo que lleva la cuenta del numero de procesos
-            consumidor();
+        {                               // Este es el hijo
+            if (sem_post(num_procesos)) // Incrementamos el semaforo que lleva la cuenta del numero de procesos
+            {
+                perror("Error en sem_post");
+            }
+            consumidor(i==0 ? ((NUM_ELEMENTOS_TOTALES / NUM_CONSUMIDORES) + (NUM_ELEMENTOS_TOTALES % NUM_CONSUMIDORES)) : (NUM_ELEMENTOS_TOTALES / NUM_CONSUMIDORES));
+        }
+        else
+        {
+            printf("Generado el consumidor %d\n", i);
         }
     }
 
+    if (sem_wait(num_procesos)) // Decrementamos el semaforo que lleva la cuenta del numero de procesos. Si este era el ultimo proceso, obtiene el uso exclusivo del semaforo (ahora vale 0)
+    {
+        perror("Error en sem_wait");
+    }
 
-    sem_wait(num_procesos); // Decrementamos el semaforo que lleva la cuenta del numero de procesos. Si este era el ultimo proceso, obtiene el uso exclusivo del semaforo (ahora vale 0)
-
-    sem_getvalue(num_procesos, &valor_semaforo_num_procesos);
+    if (sem_getvalue(num_procesos, &valor_semaforo_num_procesos))
+    {
+        perror("Error en sem_getvalue");
+    }
 
     if (munmap(buffer, sizeof(int) * TAM_BUFFER)) // Deshacemos los mapeos de memoria
     {
@@ -246,28 +292,6 @@ int main(int argc, char **argv)
     if (munmap(cuenta, sizeof(int))) // Deshacemos los mapeos de memoria
     {
         perror("Error en munmap()");
-    }
-
-    // Cerramos los semaforos. No se cerraran realmente hasta que todos los procesos hayan dejado de usarlos.
-    if (valor_semaforo_num_procesos == 0) // Si este proceso es el ultimo (y estamos seguros de que lo es, porque si vale 0 hemos adquirido el mutex sobre el semaforo), eliminamos los semaforos y el objeto compartido de memoria.
-    {
-        printf("Semaforos desvinculados.\n");
-        if (sem_unlink("/empty"))
-        {
-            perror("Error en sem_unlink()");
-        }
-        if (sem_unlink("/full"))
-        {
-            perror("Error en sem_unlink()");
-        }
-        if (sem_unlink("/mutex"))
-        {
-            perror("Error en sem_unlink()");
-        }
-        if (sem_unlink("/num_procesos"))
-        {
-            perror("Error en sem_unlink()");
-        }
     }
 
     if (sem_close(empty))
@@ -285,6 +309,28 @@ int main(int argc, char **argv)
     if (sem_close(num_procesos))
     {
         perror("Error en sem_close");
+    }
+
+    // Cerramos los semaforos. No se cerraran realmente hasta que todos los procesos hayan dejado de usarlos.
+    if (valor_semaforo_num_procesos == 0 && pid == 0) // Si este proceso es el ultimo (y estamos seguros de que lo es, porque si vale 0 hemos adquirido el mutex sobre el semaforo), eliminamos los semaforos y el objeto compartido de memoria. Introduzco la condicion pid==0 porque debe cerrarlos uno de los procesos hijo, no el padre.
+    {
+        if (sem_unlink("/empty"))
+        {
+            perror("Error en sem_unlink()");
+        }
+        if (sem_unlink("/full"))
+        {
+            perror("Error en sem_unlink()");
+        }
+        if (sem_unlink("/mutex"))
+        {
+            perror("Error en sem_unlink()");
+        }
+        if (sem_unlink("/num_procesos"))
+        {
+            perror("Error en sem_unlink()");
+        }
+        printf("Semaforos desvinculados.\n");
     }
 
     exit(EXIT_SUCCESS);
