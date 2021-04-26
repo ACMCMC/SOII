@@ -4,13 +4,13 @@
 #include <pthread.h>
 #define P 5              // productores
 #define C 4              // consumidores
-#define N 5              // tamaño del buffer
+#define N 5              // tamano del buffer
 #define ITEMS_BY_P 10    // items por cada productor
-#define SLEEP_MAX_TIME 4 // máximo tiempo para producir / consumir
+#define SLEEP_MAX_TIME 4 // maximo tiempo para producir / consumir
 
 int buffer[N]; // El buffer compartido de memoria
-int cuenta;    // El número de elementos de la cola
-int primero;   // El lugar donde está el primero de la cola
+int cuenta;    // El numero de elementos de la cola
+int primero;   // El lugar donde esta el primero de la cola
 
 pthread_mutex_t the_mutex;
 pthread_cond_t condp, condc;

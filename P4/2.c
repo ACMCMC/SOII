@@ -2,18 +2,30 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <semaphore.h>
 #define P 5              // productores
 #define C 4              // consumidores
-#define N 5              // tamaño del buffer
+#define N 5              // tamano del buffer
 #define ITEMS_BY_P 10    // items por cada productor
-#define SLEEP_MAX_TIME 4 // máximo tiempo para producir / consumir
+#define SLEEP_MAX_TIME 4 // maximo tiempo para producir / consumir
 
 int buffer[N]; // El buffer compartido de memoria
-int cuenta;    // El número de elementos de la cola
-int primero;   // El lugar donde está el primero de la cola
+int cuenta;    // El numero de elementos de la cola
+int primero;   // El lugar donde esta el primero de la cola
 
 pthread_mutex_t the_mutex;
-pthread_cond_t condp, condc;
+sem_t *empty, *full;
+
+/*====================================================================
+
+COMENTARIOS A LA PRACTICA
+
+He decidido implementar el control de las variables de condicion usando semaforos, como en practicas anteriores.
+Usando solo mutexes, no he conseguido encontrar ninguna posibilidad que garantice que se asegure la correccion del algoritmo.
+
+- Si, por ejemplo, implementase la espera que se hace sobre una variable de condicion (cuando en el codigo anterior hacia pthread_cond_wait(&condp, &the_mutex)), con un nuevo mutex (llamemoslo mutex_empty), entonces tendria que soltar the_mutex y hacer que se bloquee el proceso en base al nuevo mutex. Pero para eso, necesitaria que algun otro proceso ya hubiese adquirido el mutex, y esto no se me ocurre una forma de garantizarlo. Ademas, aun consiguiendo implementarlo, tendria el problema de que no tengo garantizado que mi proceso se ejecute todo el tiempo (es decir, la propiedad de atomicidad), entre una llamada a pthread_mutex_unlock(the_mutex) y otra a pthread_mutex_lock(mutex_empty). Asi que podria pasar que entre una llamada y otra, llegue otro productor y inserte items en el buffer, y entonces ya no fuese pertinente bloquear al proceso para que espere (y esto es logico porque hemos desbloqueado the_mutex, asi que puede haber carreras criticas). Pero si soltamos el mutex, entonces precisamente estamos perdiendo la exclusion mutua, y la necesitamos para asegurar que el acceso al buffer sea atomico. Pero la otra opcion seria incluir otro mutex para asegurar que esa parte se hace de forma atomica, y seria aun peor, porque podria dar lugar a interbloqueos. No se me ha ocurrido otra forma de hacerlo exclusivamente con mutexes. 
+
+====================================================================*/
 
 // Imprime por pantalla una representacion grafica del buffer. La parte ocupada de la lista se imprime en rojo, la parte libre en azul.
 void imprimir_buffer()
@@ -77,18 +89,21 @@ void *productor(void *p_num_elementos)
     for (num_elementos_restantes = 0; num_elementos_restantes < num_elementos; num_elementos_restantes++)
     {
         item = producir();
+        if (sem_wait(empty))
+        {
+            perror("Error en sem_wait");
+        }
         pthread_mutex_lock(&the_mutex);
         printf("(C) Adquiero el mutex\n");
-        while (cuenta == N)
-        {
-            pthread_cond_wait(&condp, &the_mutex);
-        }
         insertar_item_buffer(item);
         printf("(P) Inserto: %d\n", item);
         imprimir_buffer();
         printf("(C) Libero el mutex\n");
-        pthread_cond_signal(&condc);
         pthread_mutex_unlock(&the_mutex);
+        if (sem_post(full))
+        {
+            perror("Error en sem_post");
+        }
     }
     printf("(P) He acabado!\n");
     return NULL;
@@ -103,18 +118,21 @@ void *consumidor(void *p_num_elementos)
 
     for (num_elementos_restantes = 0; num_elementos_restantes < num_elementos; num_elementos_restantes++)
     {
+        if (sem_wait(full))
+        {
+            perror("Error en sem_wait");
+        }
         pthread_mutex_lock(&the_mutex);
         printf("(C) Adquiero el mutex\n");
-        while (cuenta == 0)
-        {
-            pthread_cond_wait(&condc, &the_mutex);
-        }
         item = sacar_item_buffer();
         printf("(C) Saco: %d\n", item);
         imprimir_buffer();
         printf("(C) Libero el mutex\n");
-        pthread_cond_signal(&condp);
         pthread_mutex_unlock(&the_mutex);
+        if (sem_post(empty))
+        {
+            perror("Error en sem_post");
+        }
         consumir(item);
     }
     printf("(C) He acabado!\n");
@@ -134,9 +152,18 @@ int main(int argc, char **argv)
     cuenta = 0; // Inicializamos la variable cuenta a 0. Deberia venir ya inicializada, pero creo que es buena practica asegurarnos.
     primero = 0;
 
-    pthread_mutex_init(&the_mutex, 0);
-    pthread_cond_init(&condp, 0);
-    pthread_cond_init(&condc, 0);
+    if (pthread_mutex_init(&the_mutex, 0))
+    {
+        perror("Error en pthread_mutex_init()");
+        exit(EXIT_FAILURE);
+    }
+    empty = sem_open("/empty", O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, N);
+    full = sem_open("/full", O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 0);
+    if (empty == SEM_FAILED || full == SEM_FAILED)
+    {
+        perror("Error en sem_open()");
+        exit(EXIT_FAILURE);
+    }
 
     for (i = 0; i < P; i++)
     {
@@ -173,9 +200,24 @@ int main(int argc, char **argv)
         }
     }
 
-    pthread_cond_destroy(&condp);
-    pthread_cond_destroy(&condc);
     pthread_mutex_destroy(&the_mutex);
+    if (sem_close(empty))
+    {
+        perror("Error en sem_close");
+    }
+    if (sem_close(full))
+    {
+        perror("Error en sem_close");
+    }
+
+    if (sem_unlink("/empty"))
+    {
+        perror("Error en sem_unlink()");
+    }
+    if (sem_unlink("/full"))
+    {
+        perror("Error en sem_unlink()");
+    }
 
     exit(EXIT_SUCCESS);
 }
