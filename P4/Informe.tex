@@ -1,0 +1,268 @@
+\documentclass[a4paper]{article}
+
+\usepackage[spanish]{babel}
+\usepackage{listings}
+\usepackage[utf8]{inputenc}
+\usepackage{titling}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{xcolor}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage[toc,page]{appendix}
+\geometry{a4paper, margin=7em}
+
+
+\lstset{
+    frame=single,
+    breaklines=true,
+    numbers=left,
+    keywordstyle=\color{blue},
+    numbersep=15pt,
+    numberstyle=,
+    basicstyle=\linespread{1.5}\selectfont\ttfamily,
+    commentstyle=\color{gray},
+    stringstyle=\color{orange},
+    identifierstyle=\color{green!40!black},
+}
+
+\setlength{\parindent}{4em}
+%%\setlength{\parindent}{0em}
+\setlength{\parskip}{0.8em}
+    
+%%\renewcommand{\familydefault}{phv} %%Seleccionamos Helvetica
+    
+\lstdefinestyle{console}
+{
+    numbers=left,
+    backgroundcolor=\color{violet},
+    %%belowcaptionskip=1\baselineskip,
+    breaklines=true,
+    %%xleftmargin=\parindent,
+    %%showstringspaces=false,
+    basicstyle=\footnotesize\ttfamily,
+    %%keywordstyle=\bfseries\color{green!40!black},
+    %%commentstyle=\itshape\color{green},
+    %%identifierstyle=\color{blue},
+    %%stringstyle=\color{orange},
+    basicstyle=\scriptsize\color{white}\ttfamily,
+}
+    
+\title{Problema del productor-consumidor}
+\author{Aldán Creo Mariño}
+    
+    
+\pagestyle{fancy}
+\fancyfoot[R]{\thepage}
+\fancyfoot[C]{}
+\makeatletter
+\let\runauthor\@author
+\let\runtitle\@title
+\makeatother
+\fancyhead[L]{\runauthor}
+\fancyhead[C]{SOI}
+\fancyhead[R]{Práctica 3}
+    
+\begin{document}
+\maketitle
+
+\section{Código vulnerable a la aparición de carreras críticas} \label{apartado_1}
+
+\subsection{Desarrollo del código}
+
+Para desarrollar el código de este apartado, me he basado en la plantilla que se incluye en la presentación de la asignatura.
+
+He creado un mismo archivo (\texttt{1.c}), que contiene los códigos del productor y del consumidor. Desde el \texttt{main} llamo a la función adecuada, en función del argumento pasado por línea de comandos (\texttt{-c}, para consumidor; o \texttt{-p}, para productor).
+
+Antes de ello, en el \texttt{main}, creo una serie de objetos anónimos compartidos en memoria con la función \texttt{shm\_open()}, que devuelve un descriptor de archivo para hacer referencia al mismo. La diferencia entre un objeto anónimo en memoria y un fichero normal es que el objeto anónimo en memoria nunca se respalda en memoria secundaria (es decir, el disco duro). De esta forma, se puede compartir una especie de fichero, pero sin necesidad de crearlo. Estos objetos los uso para crear un mapeo compartido con \texttt{mmap()}.
+
+Más concretamente, creo los siguientes mapeos de memoria compartida:
+
+\begin{itemize}
+    \item La variable \texttt{cuenta}.
+    \item El buffer para almacenar los ítems por procesar (en orden LIFO, como una pila).
+    \item Una lista donde guardo la información sobre los procesos que están participando actualmente en la generación de consumición de ítems. Cada elemento de la lista guarda información sobre el tipo de proceso (si es consumidor, productor, o si ya acabado sus funciones), y su PID. Un productor puede recorrer la lista para encontrar a un consumidor que despertar (al que referenciará usando el PID), y viceversa. La lista nunca decrece, porque cuando un proceso acaba su ejecución, simplemente se marca como inactivo. En este apartado de la práctica, la lista puede ser prescindible, pero he decidido incluirla para facilitar el generalizar el código posteriormente a un número arbitrario de productores y consumidores.
+    \item Una variable que mantiene la cuenta del número de elementos que hay en la lista compartida. Esto lo uso para poder ajustar dinámicamente el tamaño mapeado de la lista en los distintos procesos, ya que no llega con mapearla al principio, ya que durante la ejecución del programa puede ir creciendo si aparecen procesos nuevos (en este caso, la pareja del consumidor o el productor). El tamaño debe ir cambiando dinámicamente en todos los procesos.
+\end{itemize}
+
+En mi programa, por lo tanto, se pueden dar carreras críticas en todas las variables compartidas que he comentado. Por ejemplo, se podría dar una carrera crítica sobre \texttt{cuenta} si dos procesos intentan incrementar la variable al mismo tiempo, pero a uno de ellos se le expropia el uso de la CPU justo cuando acaba de leer la variable y aún no la escribió de vuelta, y el otro proceso realiza la operación completa. En ese caso, uno de los incrementos se perdería. Esta misma lógica se puede aplicar para el resto de variables y estructuras de memoria compartidas. La fórmula para solucionarlo es recurrir a la exclusión mutua, pero eso no lo haremos en este apartado, ya que precisamente se trata de observar la aparición de carreras críticas.
+
+\subsection{Ejecución}
+
+El código lo he compilado con \texttt{gcc -O0 -lrt}. En una instancia de un shell, ejecuté el productor, y en otra, al consumidor.
+
+\subsection{Ejecución añadiendo \texttt{sleeps}}
+
+Dado que en la ejecución normal no llegué a apreciar la aparición de carreras críticas, introduje un \texttt{sleep(1)} a la hora de incrementar el contador del buffer, para incrementar la probabilidad de que se den carreras críticas.
+
+EL código tomó, por tanto, la siguiente forma:
+
+\begin{lstlisting}[language=C]
+void productor()
+{
+    int num_elementos_restantes; // El numero de elementos que faltan por producir
+    int item;                    // El item que estamos produciendo actualmente
+    int cuenta_intermedio;
+
+    for (num_elementos_restantes = 0; num_elementos_restantes < NUM_ELEMENTOS_TOTALES; num_elementos_restantes++)
+    {
+        item = producir();
+        if (*cuenta == TAM_BUFFER)
+        {
+            dormir();
+        }
+        insertar_item_buffer(item);
+        printf("(P) Inserto: %d\n", item);
+        cuenta_intermedio = (*cuenta) + 1;
+        sleep(1);
+        (*cuenta) = cuenta_intermedio;
+        imprimir_buffer();
+        if (*cuenta == 1)
+        {
+            printf("(P) Voy a despertar a C\n");
+            despertar(get_pid_consumidor());
+        }
+    }
+    printf("(P) He acabado!\n");
+}
+\end{lstlisting}
+
+Los cambios se encuentran en las líneas 16, 17, y 18. El cambio en el caso del consumidor es análogo, así que no incluyo de nuevo el código.
+
+En este caso, las carreras críticas se apreciaron rápidamente. En consola se produjo la siguiente salida para el consumidor (la he recortado, por brevedad):
+
+\begin{lstlisting}[language=]
+(C) Saco: 226
+        -------------------------------------------------
+        | 921 | 159 | 0   | 99  | 0   | 0   | 0   | 0   |
+        -------------------------------------------------
+        
+(C) Saco: 159
+        -------------------------------------------------
+        | 921 | 0   | 494 | 24  | 0   | 0   | 0   | 0   |
+        -------------------------------------------------
+\end{lstlisting}
+
+En cambio, el productor produjo la siguiente salida (de nuevo, recortada):
+
+\begin{lstlisting}[language=]
+        (P) Inserto: 921
+        -------------------------------------------------
+        | 921 | 0   | 0   | 0   | 0   | 0   | 0   | 0   |
+        -------------------------------------------------
+        
+        (P) Voy a despertar a C
+        (P) Inserto: 159
+        -------------------------------------------------
+        | 921 | 159 | 0   | 0   | 0   | 0   | 0   | 0   |
+        -------------------------------------------------
+        
+        (P) Inserto: 226
+        -------------------------------------------------
+        | 921 | 159 | 226 | 0   | 0   | 0   | 0   | 0   |
+        -------------------------------------------------
+        
+        (P) Inserto: 99
+        -------------------------------------------------
+        | 921 | 159 | 0   | 99  | 0   | 0   | 0   | 0   |
+        -------------------------------------------------
+        
+        (P) Inserto: 494
+        -------------------------------------------------
+        | 921 | 0   | 494 | 99  | 0   | 0   | 0   | 0   |
+        -------------------------------------------------
+        
+        (P) Inserto: 24
+        -------------------------------------------------
+        | 921 | 0   | 494 | 24  | 0   | 0   | 0   | 0   |
+        -------------------------------------------------
+\end{lstlisting}
+
+En las salidas, puede apreciarse claramente la aparición del fenómeno de las carreras críticas. Por ejemplo, una vez que el productor despierta al consumidor, y éste empieza a consumir, el consumidor lee que la variable \texttt{cuenta} es igual a 3, y extrae el número 226, y decrementa \texttt{cuenta} a 2. Al mismo tiempo, el productor lee el 3 y lo incrementa a 4, introduciendo el 99. Puede verse que el consumidor es quien gana en la carrera crítica, ya que posteriormente el consumidor lee el elemento 2 del buffer, y no el 4, por lo que \texttt{cuenta} debía valer 2. Del mismo modo, el productor inserta el 494 en la posición 3, ya que lee el 2 que había escrito el consumidor.
+
+Las carreras críticas se van sucediendo a lo largo de la ejecución de los dos procesos, del mismo modo que acabo de explicar.
+
+\section{Apartado 2}
+
+En este apartado, se introducen los semáforos como mecanismo para controlar las carreras críticas. El contador del buffer se sustituye por un semáforo (\texttt{full}). Se utiliza un semáforo en forma de mutex. Además, se utiliza otro semáforo, que cuenta el número de posiciones vacías (\texttt{empty}).
+
+Para crear los semáforos, uso la función \texttt{sem\_open()}. Empieza intentando abrir un semáforo como si estuviera ya creado, y si la función falla, lo detecto, ya que implica que el semáforo no estaba creado y por eso no se pudo abrir (esto sucede solo en el caso del primer proceso). En tal caso, el proceso crea los semáforos. Si la función no falla, es porque un proceso ya creó anteriormente los semáforos, y por tanto simplemente obtiene referencias a los mismos, pero no los crea.
+
+Uso un semáforo adicional a los que aparecen en el código de la presentación del tema uno. El semáforo adicional que uso es un semáforo que cuenta el número de procesos que hay en ejecución. Cada proceso que se inicia incrementa su valor, y cuando acaba lo decrementa. Cada proceso que acaba, comprueba si el valor es igual a cero. Si no es igual a cero, entonces es que hay otros procesos trabajando, y simplemente finaliza su ejecución, tras cerrar los semáforos con \texttt{sem\_close()} y limpiar la memoria.
+
+En cambio, si el semáforo es igual a cero, esto implica que el proceso ha adquirido el uso exclusivo del mismo, y al mismo tiempo que ningún otro proceso se está ejecutando. Por tanto, el proceso cierra los semáforos (\texttt{sem\_unlink()}) y elimina la estructura compartida de memoria.
+
+Además, he incluido una opción para reiniciar los semáforos y estructuras compartidas, por si hiciera falta. La opción (\texttt{-r}) debe aparecer en segundo lugar. Por ejemplo: \texttt{./2.out -p -r}.
+
+El código concreto con el que he realizado las operaciones descritas se puede consultar en el anexo \ref{anexo2}.
+
+\subsection{Carreras críticas}
+
+Para comprobar si el código es inmune a la aparición de carreras críticas, ejecutado el programa introduciendo los mismos sleeps que introduje en el apartado anterior. Como era esperable, la ejecución del programa fue totalmente normal, y no se pudo apreciar la aparición de ninguna carrera crítica. Esto es lógico, dado que estamos restringiendo el acceso a la zona de memoria compartida a través del semáforo de exclusión mutua.
+
+\section{Apartado 3}
+
+El apartado 3 de la práctica pide generalizar el código para que haya \texttt{C} consumidores, y \texttt{P} productores. Esto es relativamente sencillo de hacer, por la forma en que he desarrollado los apartados anteriores.
+
+Pese a todo, conviene comentar un detalle antes que nada. Ya que el enunciado de la práctica no lo aclara, entiendo que se pide que los procesos se lancen desde una misma consola. En otras palabras, que exista un proceso padre único que ejecute los productores y consumidores a través de un \texttt{fork()}. Entiendo que esto es lo que se pide, ya que se indica que hay que definir dos parámetros, con el número de productores y consumidores. Un proceso no tiene forma de controlar qué otros procesos existen en el sistema, ya que los lanza el usuario por su cuenta, así que por eso entiendo que tiene que haber un proceso padre que se encarga de crear al resto. Si no, no tendría sentido crear los parámetros que se piden.
+
+Por tanto, he adaptado el código para que un único proceso se encargue de crear a todos los que hacen falta. En esta ocasión, ya no es necesario crear un objeto compartido anónimo de memoria, ya que se pueden hacer mapeos de memoria anónimos directamente desde el proceso padre, que hereden los hijos, sin necesidad de compartir un objeto anónimo.
+
+Otra cuestión que es necesario abordar en este caso es el problema que supone llevar la cuenta de elementos que hay en el buffer. En el apartado anterior, siguiendo el ejemplo del Tanenbaum, escribí el siguiente código (en el caso del consumidor):
+
+\begin{lstlisting}[language=C]
+        sem_wait(full);
+        sem_wait(mutex);
+        printf("(C) Adquiero el mutex\n");
+        item = sacar_item_buffer();
+        printf("(C) Saco: %d\n", item);
+        imprimir_buffer();
+        printf("(C) Libero el mutex\n");
+        sem_post(mutex);
+        sem_post(empty);
+        consumir(item);
+\end{lstlisting}
+
+El problema que se puede producir aquí es que, si hay otro consumidor (B), el otro consumidor podría decrementar el valor del semáforo \texttt{full} sin estar dentro de la región crítica. Por tanto, el consumidor A percibiría que el valor del semáforo ha bajado, y podría consumir en una posición del buffer anterior a la que le correspondería (por ejemplo, consumir el cuarto elemento, en vez de la cima del buffer, que sería el quinto elemento).
+
+Tal como tenemos escrito el código, este problema no se puede solucionar, ya que la primera opción, la más obvia, sería incluir el semáforo \texttt{full} dentro de la exclusión mutua, pero eso no tendría lógica, ya que precisamente el semáforo \texttt{full} tiene el propósito de frenar a un consumidor que va a obtener la exclusión mutua de hacerlo (si no hay elementos en el buffer, \texttt{full} vale 0, por lo que el consumidor se queda esperando a que aumente su valor). Sería catastrófico bajar la línea donde hacemos \texttt{sem\_wait(full)}, ya que Podría darse el caso de que un consumidor obtuviese el control del semáforo \texttt{mutex}, y que justo después se quedase bloqueado porque no hay elementos que consumir. El problema aquí sería que ningún productor podría producir nada, ya que el control de \texttt{mutex} lo tiene el consumidor que está bloqueado. Es decir, tendríamos un interbloqueo.
+
+El ejemplo descrito es análogo para el caso del productor. Por tanto, en los dos casos tendremos que encontrar una solución nueva que evite el interbloqueo y al mismo tiempo se asegure de que llevamos la cuenta de elementos del buffer de forma correcta.
+
+La solución que he tomado yo ha sido recuperar la variable compartida \texttt{cuenta} que usaba en el apartado \ref{apartado_1}. Esta variable es vulnerable a la aparición de carreras críticas, como vimos anteriormente, y precisamente por eso, sólo se modifica dentro de la región que está regida por un mecanismo de exclusión mutua (el semáforo \texttt{mutex}). De esta forma, consigo mantener la coherencia en la cuenta del buffer.
+
+El reparto del número de elementos a producir lo he realizado de acuerdo con la siguiente condición:
+
+\begin{lstlisting}[language=C]
+    i==0 ? ((NUM_ELEMENTOS_TOTALES / NUM_PRODUCTORES) + (NUM_ELEMENTOS_TOTALES % NUM_PRODUCTORES)) : (NUM_ELEMENTOS_TOTALES / NUM_PRODUCTORES)
+\end{lstlisting}
+
+Lo que hace es asignarle al primero de los procesos creados, además de la parte proporcional que le toca de ítems para producir, el resultado del módulo por el número de procesos. De esta forma, aseguro que se producen en total el mismo número de ítems que se consumen. Por ejemplo, si hay 13 elementos para producir, y hay 3 productores, al primero le tocaría producir la parte entera de la divisón más el resultado del módulo ($13/3=4.33\dots \rightarrow 4 \rightarrow 4 + (13 \% 3) \rightarrow 4 + 1 \rightarrow 5$). El resto producirán $13/3=4.33\dots \rightarrow 4$ ítems. En total, 13. La misma lógica se aplica a los consumidores.
+
+Adicionalmente a lo comentado cabe mencionar el hecho de que, al acabar todos los procesos sus funciones, el shell no muestra de vuelta el prompt. Esto se explica fácilmente, ya que el prompt se muestra cuando muere el padre, que es el primero de todos en morir, al menos en las ejecuciones que he realizado yo, ya que no tiene que realizar ningún tipo de procesamiento de datos, y por eso acaba mucho antes. Es decir, el prompt se muestra antes de que acaben el resto de los procesos, y por eso cuando muere el último de los hijos no se muestra de nuevo el prompt, dando la impresión de que nunca ha aparecido, cuando si se vuelve atrás en el registro de la consola, se puede ver que el prompt sí apareció, solo que de forma previa.
+
+\section{Código con hilos}
+
+En el guion de la práctica se indica que solo hay que comentar los apartados anteriores, así que no destacaré nada sobre este, ya que en cualquier caso se parece mucho al tercero. El código está en el anexo \ref{anexo4}.
+
+\section{Comentarios adicionales}
+
+Pese a que los códigos aparecen recogidos en los anexos, he decidido incluírlos también como archivos separados en la entrega.
+    
+\begin{appendices} 
+\section{\LARGE \textbf{Anexo 1}}\label{anexo1}
+\lstinputlisting[language=C]{1.c}
+    
+\section{\LARGE \textbf{Anexo 2}}\label{anexo2}
+\lstinputlisting[language=C]{2.c}
+    
+\section{\LARGE \textbf{Anexo 3}}\label{anexo3}
+\lstinputlisting[language=C]{3.c}
+
+\section{\LARGE \textbf{Anexo 4}}\label{anexo4}
+\lstinputlisting[language=C]{4.c}
+    
+\end{appendices}
+
+\end{document}
