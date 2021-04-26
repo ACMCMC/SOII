@@ -2,15 +2,15 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <pthread.h>
-#define P 5 // productores
-#define C 4 // consumidores
-#define N 5 // tamaño del buffer
-#define ITEMS_BY_P 10 // items por cada productor
+#define P 5              // productores
+#define C 4              // consumidores
+#define N 5              // tamaño del buffer
+#define ITEMS_BY_P 10    // items por cada productor
 #define SLEEP_MAX_TIME 4 // máximo tiempo para producir / consumir
 
 int buffer[N]; // El buffer compartido de memoria
-int cuenta; // El número de elementos de la cola
-int primero; // El lugar donde está el primero de la cola
+int cuenta;    // El número de elementos de la cola
+int primero;   // El lugar donde está el primero de la cola
 
 pthread_mutex_t the_mutex;
 pthread_cond_t condp, condc;
@@ -58,7 +58,7 @@ int sacar_item_buffer()
 int producir()
 {
     sleep(((int)rand()) % SLEEP_MAX_TIME); // Introducimos una espera aleatoria entre 0 y SLEEP_MAX_TIME
-    return ((int)rand() % 999) + 1;             // Numeros entre 1 y 999
+    return ((int)rand() % 999) + 1;        // Numeros entre 1 y 999
 }
 
 // Consume un item del buffer
@@ -68,7 +68,7 @@ void consumir(int numero)
 }
 
 // Implementa la funcion de las diapositivas
-void* productor(void *p_num_elementos)
+void *productor(void *p_num_elementos)
 {
     int num_elementos_restantes; // El numero de elementos que faltan por producir
     int item;                    // El item que estamos produciendo actualmente
@@ -77,24 +77,25 @@ void* productor(void *p_num_elementos)
     for (num_elementos_restantes = 0; num_elementos_restantes < num_elementos; num_elementos_restantes++)
     {
         item = producir();
-	pthread_mutex_lock(&the_mutex);
+        pthread_mutex_lock(&the_mutex);
         printf("(C) Adquiero el mutex\n");
-	while (cuenta==N) {
-		pthread_cond_wait(&condp, &the_mutex);
-	}
+        while (cuenta == N)
+        {
+            pthread_cond_wait(&condp, &the_mutex);
+        }
         insertar_item_buffer(item);
         printf("(P) Inserto: %d\n", item);
         imprimir_buffer();
         printf("(C) Libero el mutex\n");
-	pthread_cond_signal(&condc);
-	pthread_mutex_unlock(&the_mutex);
+        pthread_cond_signal(&condc);
+        pthread_mutex_unlock(&the_mutex);
     }
     printf("(P) He acabado!\n");
     return NULL;
 }
 
 // Implementa la funcion de las diapositivas
-void* consumidor(void *p_num_elementos)
+void *consumidor(void *p_num_elementos)
 {
     int num_elementos_restantes; // El numero de elementos que faltan por consumir
     int item;                    // El item que estamos consumiendo actualmente
@@ -102,15 +103,18 @@ void* consumidor(void *p_num_elementos)
 
     for (num_elementos_restantes = 0; num_elementos_restantes < num_elementos; num_elementos_restantes++)
     {
-	pthread_mutex_lock(&the_mutex);
+        pthread_mutex_lock(&the_mutex);
         printf("(C) Adquiero el mutex\n");
-	while (cuenta==0) {pthread_cond_wait(&condc, &the_mutex);}
+        while (cuenta == 0)
+        {
+            pthread_cond_wait(&condc, &the_mutex);
+        }
         item = sacar_item_buffer();
         printf("(C) Saco: %d\n", item);
         imprimir_buffer();
         printf("(C) Libero el mutex\n");
-	pthread_cond_signal(&condp);
-	pthread_mutex_unlock(&the_mutex);
+        pthread_cond_signal(&condp);
+        pthread_mutex_unlock(&the_mutex);
         consumir(item);
     }
     printf("(C) He acabado!\n");
@@ -130,14 +134,14 @@ int main(int argc, char **argv)
     cuenta = 0; // Inicializamos la variable cuenta a 0. Deberia venir ya inicializada, pero creo que es buena practica asegurarnos.
     primero = 0;
 
-pthread_mutex_init(&the_mutex, 0);
+    pthread_mutex_init(&the_mutex, 0);
     pthread_cond_init(&condp, 0);
     pthread_cond_init(&condc, 0);
 
     for (i = 0; i < P; i++)
     {
         num_elementos_productores[i] = ITEMS_BY_P;
-        if (pthread_create(&threads_productores[i], NULL, &productor, (void*) &num_elementos_productores[i]))
+        if (pthread_create(&threads_productores[i], NULL, &productor, (void *)&num_elementos_productores[i]))
         { // Hubo error, aun asi no abortamos
             perror("Error en pthread_create()");
         }
@@ -146,7 +150,7 @@ pthread_mutex_init(&the_mutex, 0);
     for (i = 0; i < C; i++)
     {
         num_elementos_consumidores[i] = (i == 0 ? (((ITEMS_BY_P * P) / C) + ((ITEMS_BY_P * P) % C)) : ((ITEMS_BY_P * P) / C));
-        if (pthread_create(&threads_consumidores[i], NULL, &consumidor, (void*) &num_elementos_consumidores[i]))
+        if (pthread_create(&threads_consumidores[i], NULL, &consumidor, (void *)&num_elementos_consumidores[i]))
         { // Hubo error, aun asi no abortamos
             perror("Error en pthread_create()");
         }
@@ -156,13 +160,15 @@ pthread_mutex_init(&the_mutex, 0);
     // El hilo principal espera a que acaben los demas
     for (i = 0; i < P; i++)
     {
-        if (pthread_join(threads_productores[i], NULL)) {
+        if (pthread_join(threads_productores[i], NULL))
+        {
             perror("Error en pthread_join()");
         }
     }
     for (i = 0; i < C; i++)
     {
-        if (pthread_join(threads_consumidores[i], NULL)) {
+        if (pthread_join(threads_consumidores[i], NULL))
+        {
             perror("Error en pthread_join()");
         }
     }
