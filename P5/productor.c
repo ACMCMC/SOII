@@ -32,7 +32,7 @@ void productor()
 
     for (num_elementos_restantes = DATOS_A_PRODUCIR; num_elementos_restantes > 0; num_elementos_restantes--) // Vamos a iterar mientras aún queden ítems por producir
     {
-        if (mq_receive(almacen1, NULL, 0, NULL))
+        if (mq_receive(almacen1, &mensaje_elemento_producido, 0, NULL))
         { // Recibimos un mensaje del consumidor. Si no hay un mensaje disponible, la función se bloquea hasta que se recibe un mensaje. Lo recibimos en la cola almacen1, y como no nos interesa guardarlo (es un mensaje vacío), el puntero al lugar donde guardarlo es NULL, la longitud del buffer al que apunta (NULL) es 0, y tampoco nos interesa saber la prioridad del mensaje (cuarto argumento, que es NULL también). Se supone que la prioridad siempre es la misma (0).
             perror("Error en mq_receive");
         }
