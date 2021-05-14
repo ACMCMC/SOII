@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <mqueue.h>
+
 #define MAX_BUFFER 6        /* tamaño del buffer */
 #define DATOS_A_PRODUCIR 50 /* número de datos a producir */
 #define SLEEP_MAX_TIME 4    /* los sleeps serán de un máximo de 4 segundos */
@@ -22,7 +23,7 @@ void consumir(int numero)
     sleep(((int)rand()) % SLEEP_MAX_TIME); // Introducimos una espera aleatoria entre 0 y SLEEP_MAX_TIME
 }
 
-// Implementa la funcion de las diapositivas
+// Implementa la función de las diapositivas
 void consumidor()
 {
     int num_elementos_restantes;     // El numero de elementos que faltan por consumir
@@ -55,7 +56,7 @@ void consumidor()
 
     for (num_elementos_restantes = MAX_BUFFER; num_elementos_restantes > 0; num_elementos_restantes--) // Finalmente, tenemos que consumir MAX_BUFFER mensajes, sin pedirle al productor que genere más.
     {
-        if (mq_receive(almacen2, &mensaje_elemento_producido, sizeof(mensaje_elemento_producido), NULL))
+        if (mq_receive(almacen2, &mensaje_elemento_producido, sizeof(mensaje_elemento_producido), NULL) == -1)
         { // Recibimos un mensaje del productor. Si no hay un mensaje disponible, la función se bloquea hasta que se recibe un mensaje. Lo recibimos en la cola almacen2, y lo guardamos en la dirección de mensaje_elemento_producido. El tamaño es el de un char, y el cuarto argumento es NULL porque no nos interesa saber cuál era la prioridad del mensaje (debería ser 0 en todos).
             perror("Error en mq_receive");
         }
@@ -84,7 +85,7 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
 
-    consumidor();
+    consumidor();  // Código principal del consumidor
 
     mq_close(almacen1); // Cerramos las colas en este proceso
     mq_close(almacen2);

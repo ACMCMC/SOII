@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <mqueue.h>
+
 #define MAX_BUFFER 6        /* tamaño del buffer */
 #define DATOS_A_PRODUCIR 50 /* número de datos a producir */
 #define SLEEP_MAX_TIME 4    /* los sleeps serán de un máximo de 4 segundos */
@@ -23,7 +24,7 @@ int producir()
     return ((int)rand() % 100) + 1;        // Numeros entre 1 y 100, para que quepan en un char (es decir, tomamos el valor del char como el valor del ítem, e ignoramos su representación ASCII. Por ejemplo, el 65 se interpretará como ese número, no como la letra 'A'). Si no, podríamos enviar varios chars.
 }
 
-// Implementa la funcion de las diapositivas
+// Implementa la función de las diapositivas
 void productor()
 {
     int num_elementos_restantes;     // El numero de elementos que faltan por producir
@@ -70,7 +71,7 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
 
-    productor();
+    productor(); // Código principal del productor
 
     mq_close(almacen1); // Cerramos las colas en este proceso
     mq_close(almacen2);
