@@ -11,6 +11,19 @@
 mqd_t almacen1; /* cola de entrada de mensajes para el productor */
 mqd_t almacen2; /* cola de entrada de mensajes para el consumidor */
 
+/*=============================================================
+                COMENTARIOS AL CODIGO
+    
+    He configurado los tiempos de espera del productor y del
+    consumidor para que sea mucho mayor en el consumidor (y,
+    de esta forma, el buffer se llene). Lo que se puede
+    observar en la ejecución es que la velodidad de producción
+    se ajusta a la disponibilidad de la cola de mensajes,
+    que se llena rápidamente, y no se producen carreras
+    críticas, ya que estamos usando colas separadas para leer
+    y escribir en cada uno de los sentidos.
+=============================================================*/
+
 // Se encarga de construir un mensaje, pasándole un puntero a cadena de caracteres y un ítem
 void construir_mensaje(char *mensaje, int item)
 {
