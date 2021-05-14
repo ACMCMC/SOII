@@ -75,10 +75,6 @@ int main(int argc, char **argv)
 
     srand(clock()); // Semilla del generador aleatorio de numeros
 
-    /* Borrado de los buffers de entrada por si existían de una ejecución previa*/
-    mq_unlink("/ALMACEN1");
-    mq_unlink("/ALMACEN2");
-
     /* Apertura de los buffers */
     almacen1 = mq_open("/ALMACEN1", O_WRONLY, 0777, &attr); // Abrimos la cola en modo sólo escritura, pero no la creamos (es responsabilidad del productor, que tiene que ser el primero en ejecutarse)
     almacen2 = mq_open("/ALMACEN2", O_RDONLY, 0777, &attr); // Abrimos la cola en modo sólo lectura, pero no la creamos
