@@ -52,8 +52,6 @@ void productor()
 int main(int argc, char **argv)
 {
     struct mq_attr attr; // Estructura que almacena parámetros sobre la cola de mensajes, se usa a la hora de crearla
-    attr.mq_maxmsg = MAX_BUFFER;
-    attr.mq_msgsize = sizeof(char);
 
     srand(clock()); // Semilla del generador aleatorio de numeros
 
@@ -61,8 +59,13 @@ int main(int argc, char **argv)
     mq_unlink("/ALMACEN1");
     mq_unlink("/ALMACEN2");
 
+    attr.mq_maxmsg = MAX_BUFFER; // El máximo de los buffers es MAX_BUFFER
+    attr.mq_msgsize = 0; // El tamaño de los mensajes para el productor será 0 (son mensajes vacíos)
+
     /* Apertura de los buffers */
     almacen1 = mq_open("/ALMACEN1", O_CREAT | O_RDONLY, 0777, &attr); // Creamos la cola de mensajes almacen1, nuestro acceso a ella será en modo sólo lectura
+
+    attr.mq_msgsize = sizeof(char); // El tamaño de mensajes para el consumidor será de un char
     almacen2 = mq_open("/ALMACEN2", O_CREAT | O_WRONLY, 0777, &attr); // Creamos la cola de mensajes almacen2, nuestro acceso a ella será en modo sólo escritura
     if ((almacen1 == -1) || (almacen2 == -1))
     {
