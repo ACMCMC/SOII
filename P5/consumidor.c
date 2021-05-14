@@ -44,7 +44,7 @@ void consumidor()
         { // Recibimos un mensaje del productor. Si no hay un mensaje disponible, la función se bloquea hasta que se recibe un mensaje. Lo recibimos en la cola almacen2, y lo guardamos en la dirección de mensaje_elemento_producido. El tamaño es el de un char, y el cuarto argumento es NULL porque no nos interesa saber cuál era la prioridad del mensaje (debería ser 0 en todos).
             perror("Error en mq_receive");
         }
-        item = extraer_elemento(mensaje_elemento_producido); // Obtenemos el ítem del mensaje
+        item = extraer_elemento(&mensaje_elemento_producido); // Obtenemos el ítem del mensaje
         if (mq_send(almacen1, NULL, 0, 0))
         { // Enviamos un mensaje vacío al productor. Esto le indica que queremos que nos envíe otro ítem más.
             perror("Error en mq_send()");
@@ -59,7 +59,7 @@ void consumidor()
         { // Recibimos un mensaje del productor. Si no hay un mensaje disponible, la función se bloquea hasta que se recibe un mensaje. Lo recibimos en la cola almacen2, y lo guardamos en la dirección de mensaje_elemento_producido. El tamaño es el de un char, y el cuarto argumento es NULL porque no nos interesa saber cuál era la prioridad del mensaje (debería ser 0 en todos).
             perror("Error en mq_receive");
         }
-        item = extraer_elemento(mensaje_elemento_producido); // Obtenemos el ítem del mensaje
+        item = extraer_elemento(&mensaje_elemento_producido); // Obtenemos el ítem del mensaje
         consumir(item); // Lo consumimos
         printf("(C) He consumido: %d\n", item);
     }
