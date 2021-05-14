@@ -63,8 +63,8 @@ int main(int argc, char **argv)
     mq_unlink("/ALMACEN2");
 
     /* Apertura de los buffers */
-    almacen1 = mq_open("/ALMACEN1", O_CREAT | O_RDONLY, 0777, &attr); // Creamos la cola de mensajes almacen1, nuestro acceso a ella será en modo sólo lectura
-    almacen2 = mq_open("/ALMACEN2", O_CREAT | O_WRONLY, 0777, &attr); // Creamos la cola de mensajes almacen2, nuestro acceso a ella será en modo sólo escritura
+    almacen1 = mq_open("/ALMACEN1", O_CREAT | O_RDWR, 0777, &attr); // Creamos la cola de mensajes almacen1, nuestro acceso a ella será en modo sólo lectura
+    almacen2 = mq_open("/ALMACEN2", O_CREAT | O_RDWR, 0777, &attr); // Creamos la cola de mensajes almacen2, nuestro acceso a ella será en modo sólo escritura
     if ((almacen1 == -1) || (almacen2 == -1))
     {
         perror("mq_open");
