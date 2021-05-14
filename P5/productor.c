@@ -33,11 +33,10 @@ void productor()
 
     for (num_elementos_restantes = DATOS_A_PRODUCIR; num_elementos_restantes > 0; num_elementos_restantes--) // Vamos a iterar mientras aún queden ítems por producir
     {
-        if (mq_receive(almacen1, &mensaje_vacio_consumidor, sizeof(mensaje_vacio_consumidor), NULL))
+        if (mq_receive(almacen1, &mensaje_vacio_consumidor, sizeof(mensaje_vacio_consumidor), NULL) == -1)
         { // Recibimos un mensaje del consumidor. Si no hay un mensaje disponible, la función se bloquea hasta que se recibe un mensaje. Lo recibimos en la cola almacen1, y como no nos interesa guardarlo (es un mensaje vacío), el puntero al lugar donde guardarlo es NULL, la longitud del buffer al que apunta (NULL) es 0, y tampoco nos interesa saber la prioridad del mensaje (cuarto argumento, que es NULL también). Se supone que la prioridad siempre es la misma (0).
             perror("Error en mq_receive");
         }
-        printf("(C) He recibido un mensaje vacío del consumidor\n");
         item = producir(); // Obtenemos el ítem del mensaje
         printf("(P) He producido: %d\n", item);
         construir_mensaje(&mensaje_elemento_producido, item);
@@ -63,8 +62,8 @@ int main(int argc, char **argv)
     mq_unlink("/ALMACEN2");
 
     /* Apertura de los buffers */
-    almacen1 = mq_open("/ALMACEN1", O_CREAT | O_RDWR, 0777, &attr); // Creamos la cola de mensajes almacen1, nuestro acceso a ella será en modo sólo lectura
-    almacen2 = mq_open("/ALMACEN2", O_CREAT | O_RDWR, 0777, &attr); // Creamos la cola de mensajes almacen2, nuestro acceso a ella será en modo sólo escritura
+    almacen1 = mq_open("/ALMACEN1", O_CREAT | O_RDONLY, 0777, &attr); // Creamos la cola de mensajes almacen1, nuestro acceso a ella será en modo sólo lectura
+    almacen2 = mq_open("/ALMACEN2", O_CREAT | O_WRONLY, 0777, &attr); // Creamos la cola de mensajes almacen2, nuestro acceso a ella será en modo sólo escritura
     if ((almacen1 == -1) || (almacen2 == -1))
     {
         perror("mq_open");
