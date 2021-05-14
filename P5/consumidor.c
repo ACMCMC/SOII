@@ -89,5 +89,9 @@ int main(int argc, char **argv)
     mq_close(almacen1); // Cerramos las colas en este proceso
     mq_close(almacen2);
 
+    // Borrado de las colas
+    mq_unlink("/ALMACEN1");
+    mq_unlink("/ALMACEN2");
+
     exit(EXIT_SUCCESS);
 }
