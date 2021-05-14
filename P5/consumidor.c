@@ -3,7 +3,7 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <mqueue.h>
-#define MAX_BUFFER 8        /* tamaño del buffer */
+#define MAX_BUFFER 6        /* tamaño del buffer */
 #define DATOS_A_PRODUCIR 50 /* número de datos a producir */
 #define SLEEP_MAX_TIME 4 /* los sleeps serán de un máximo de 4 segundos */
 
