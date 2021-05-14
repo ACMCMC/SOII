@@ -39,8 +39,8 @@ void productor()
         printf("(C) He recibido un mensaje vacío del consumidor\n");
         item = producir(); // Obtenemos el ítem del mensaje
         printf("(P) He producido: %d\n", item);
-        construir_mensaje(mensaje_elemento_producido, item);
-        if (mq_send(almacen2, mensaje_elemento_producido, sizeof(char), 0))
+        construir_mensaje(&mensaje_elemento_producido, item);
+        if (mq_send(almacen2, &mensaje_elemento_producido, sizeof(char), 0))
         { // Enviamos un mensaje con el ítem al consumidor. Lo hacemos a través de almacen2, enviando mensaje_elemento_producido, con un tamaño de un char, y prioridad 0.
             perror("Error en mq_send()");
         }
