@@ -6,7 +6,7 @@
 
 #define MAX_BUFFER 6        /* tamaño del buffer */
 #define DATOS_A_PRODUCIR 50 /* número de datos a producir */
-#define SLEEP_MAX_TIME 4    /* los sleeps serán de un máximo de 4 segundos */
+#define SLEEP_MAX_TIME 8    /* los sleeps serán de un máximo de 4 segundos */
 
 mqd_t almacen1; /* cola de entrada de mensajes para el productor */
 mqd_t almacen2; /* cola de entrada de mensajes para el consumidor */
