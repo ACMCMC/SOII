@@ -63,8 +63,8 @@ void consumidor()
         consumir(item); // Lo consumimos
         printf("(C) He consumido: %d\n", item);
     }
+    
     printf("(C) He acabado!\n");
-    return NULL;
 }
 
 int main(int argc, char **argv)

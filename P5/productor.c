@@ -44,11 +44,9 @@ void productor()
         { // Enviamos un mensaje con el ítem al consumidor. Lo hacemos a través de almacen2, enviando mensaje_elemento_producido, con un tamaño de un char, y prioridad 0.
             perror("Error en mq_send()");
         }
-        consumir(item); // Lo consumimos
     }
 
     printf("(P) He acabado!\n");
-    return NULL;
 }
 
 int main(int argc, char **argv)
