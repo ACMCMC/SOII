@@ -5,7 +5,7 @@
 #include <mqueue.h>
 #define MAX_BUFFER 6        /* tamaño del buffer */
 #define DATOS_A_PRODUCIR 50 /* número de datos a producir */
-#define SLEEP_MAX_TIME 4 /* los sleeps serán de un máximo de 4 segundos */
+#define SLEEP_MAX_TIME 4    /* los sleeps serán de un máximo de 4 segundos */
 
 mqd_t almacen1; /* cola de entrada de mensajes para el productor */
 mqd_t almacen2; /* cola de entrada de mensajes para el consumidor */
@@ -13,7 +13,7 @@ mqd_t almacen2; /* cola de entrada de mensajes para el consumidor */
 // Se encarga de construir un mensaje, pasándole un puntero a cadena de caracteres y un ítem
 void construir_mensaje(char *mensaje, int item)
 {
-    *mensaje = (char) item; // El mensaje es un sólo char que contiene un valor del 1 al 100, así que hacemos que el lugar donde apunta mensaje sea el valor de item.
+    *mensaje = (char)item; // El mensaje es un sólo char que contiene un valor del 1 al 100, así que hacemos que el lugar donde apunta mensaje sea el valor de item.
 }
 
 // Produce un item, para introducirlo en el buffer
@@ -27,7 +27,7 @@ int producir()
 void productor()
 {
     int num_elementos_restantes;     // El numero de elementos que faltan por producir
-    char mensaje_vacio_consumidor; // El mensaje con el elemento producido, que le mandamos al consumidor
+    char mensaje_vacio_consumidor;   // El mensaje con el elemento producido, que le mandamos al consumidor
     char mensaje_elemento_producido; // El mensaje con el elemento producido, que le mandamos al consumidor
     int item;                        // El ítem que le pasamos al consumidor
 
@@ -52,8 +52,8 @@ void productor()
 
 int main(int argc, char **argv)
 {
-    struct mq_attr attr; // Estructura que almacena parámetros sobre la cola de mensajes
-    attr.mq_maxmsg = MAX_BUFFER; // La cola tendrá un máximo de MAX_BUFFER mensajes.
+    struct mq_attr attr;            // Estructura que almacena parámetros sobre la cola de mensajes
+    attr.mq_maxmsg = MAX_BUFFER;    // La cola tendrá un máximo de MAX_BUFFER mensajes.
     attr.mq_msgsize = sizeof(char); // El tamaño de mensajes para ambas colas será de un char como máximo. Realmente, el consumidor envía mensajes vacíos al productor, pero simplemente ignoraremos su contenido.
 
     srand(clock()); // Semilla del generador aleatorio de numeros

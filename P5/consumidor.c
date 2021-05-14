@@ -5,7 +5,7 @@
 #include <mqueue.h>
 #define MAX_BUFFER 6        /* tamaño del buffer */
 #define DATOS_A_PRODUCIR 50 /* número de datos a producir */
-#define SLEEP_MAX_TIME 4 /* los sleeps serán de un máximo de 4 segundos */
+#define SLEEP_MAX_TIME 4    /* los sleeps serán de un máximo de 4 segundos */
 
 mqd_t almacen1; /* cola de entrada de mensajes para el productor */
 mqd_t almacen2; /* cola de entrada de mensajes para el consumidor */
@@ -60,7 +60,7 @@ void consumidor()
             perror("Error en mq_receive");
         }
         item = extraer_elemento(&mensaje_elemento_producido); // Obtenemos el ítem del mensaje
-        consumir(item); // Lo consumimos
+        consumir(item);                                       // Lo consumimos
         printf("(C) He consumido: %d\n", item);
     }
 
@@ -69,8 +69,8 @@ void consumidor()
 
 int main(int argc, char **argv)
 {
-    struct mq_attr attr; // Estructura que almacena parámetros sobre la cola de mensajes
-    attr.mq_maxmsg = MAX_BUFFER; // La cola tendrá un máximo de MAX_BUFFER mensajes.
+    struct mq_attr attr;            // Estructura que almacena parámetros sobre la cola de mensajes
+    attr.mq_maxmsg = MAX_BUFFER;    // La cola tendrá un máximo de MAX_BUFFER mensajes.
     attr.mq_msgsize = sizeof(char); // El tamaño de mensajes para ambas colas será de un char como máximo. Realmente, el consumidor envía mensajes vacíos al productor, pero simplemente ignoraremos su contenido.
 
     srand(clock()); // Semilla del generador aleatorio de numeros
