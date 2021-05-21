@@ -178,7 +178,7 @@ void *filosofo(void *p_num_filosofo)
 
 int main(int argc, char **argv)
 {
-    pthread_t threads_filosofos[N];
+    pthread_t *threads_filosofos;
     int i;
 
     printf("Cuantos filosofos debe haber? ");
@@ -187,6 +187,7 @@ int main(int argc, char **argv)
 
     semaforosFilosofos = (sem_t *) malloc(sizeof(sem_t) * N);
     estado = (unsigned int *) malloc(sizeof(unsigned int) * N);
+    threads_filosofos = (pthread_t *) malloc(sizeof(pthread_t) * N);
 
     srand(clock()); // Semilla del generador aleatorio de numeros
 
@@ -242,6 +243,7 @@ int main(int argc, char **argv)
 
     free(semaforosFilosofos);
     free(estado);
+    free(threads_filosofos);
 
     exit(EXIT_SUCCESS);
 }
