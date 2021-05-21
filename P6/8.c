@@ -10,8 +10,8 @@
 #include <semaphore.h>
 
 #define TIEMPO_CRUZAR_PUENTE 2
-#define TIEMPO_PASEAR 30
-#define NUM_COCHES 8
+#define TIEMPO_PASEAR 3
+#define NUM_COCHES 12
 
 #define IZQUIERDA 0
 #define DERECHA 1
