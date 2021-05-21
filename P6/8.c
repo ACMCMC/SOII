@@ -56,6 +56,7 @@ void cruzar_izquierda(int id) {
     *cuenta_izquierda++;
     if (*cuenta_izquierda == 1) {
         sem_wait(puente);
+        printf(ANSI_COLOR_GREEN "[%d] Estan cruzando coches desde la IZQUIERDA\n" ANSI_COLOR_RESET, id);
     }
     sem_post(mutex_cuenta_izquierda);
     cruzar_puente();
@@ -63,6 +64,7 @@ void cruzar_izquierda(int id) {
     *cuenta_izquierda--;
     if (*cuenta_izquierda == 0) {
         sem_post(puente);
+        printf(ANSI_COLOR_GREEN "[%d] Han acabado de cruzar coches desde la IZQUIERDA\n" ANSI_COLOR_RESET, id);
     }
     sem_post(mutex_cuenta_izquierda);
 }
@@ -72,6 +74,7 @@ void cruzar_derecha(int id) {
     *cuenta_derecha++;
     if (*cuenta_derecha == 1) {
         sem_wait(puente);
+        printf(ANSI_COLOR_GREEN "[%d] Estan cruzando coches desde la DERECHA\n" ANSI_COLOR_RESET, id);
     }
     sem_post(mutex_cuenta_derecha);
     cruzar_puente();
@@ -79,6 +82,7 @@ void cruzar_derecha(int id) {
     *cuenta_derecha--;
     if (*cuenta_derecha == 0) {
         sem_post(puente);
+        printf(ANSI_COLOR_GREEN "[%d] Han acabado de cruzar coches desde la DERECHA\n" ANSI_COLOR_RESET, id);
     }
     sem_post(mutex_cuenta_derecha);
 }
@@ -91,13 +95,13 @@ void coche(int id)
     pasear(); // Empezamos paseando de 1 a 30 s
     sentido = escoger_sentido();
     if (sentido == IZQUIERDA) {
-        printf("[%d] Voy a cruzar el puente desde la IZQUIERDA\n", id);
+        printf(ANSI_COLOR_BLUE "[%d] Voy a cruzar el puente desde la IZQUIERDA\n" ANSI_COLOR_RESET, id);
         cruzar_izquierda(id);
-        printf("[%d] He cruzado el puente desde la IZQUIERDA\n", id);
+        printf(ANSI_COLOR_BLUE "[%d] He cruzado el puente desde la IZQUIERDA\n" ANSI_COLOR_RESET, id);
     } else {
-        printf("[%d] Voy a cruzar el puente desde la DERECHA\n", id);
+        printf(ANSI_COLOR_RED "[%d] Voy a cruzar el puente desde la DERECHA\n" ANSI_COLOR_RESET, id);
         cruzar_derecha(id);
-        printf("[%d] He cruzado el puente desde la DERECHA\n", id);
+        printf(ANSI_COLOR_RED "[%d] He cruzado el puente desde la DERECHA\n" ANSI_COLOR_RESET, id);
     }
 }
 
