@@ -75,6 +75,9 @@ Comentario al codigo:
     incompatibles entre si, pero con la diferencia de que en el problema original
     de los lectores-escritores, todos los lectores podian leer a la vez, y en mi
     codigo, solo uno de ellos puede usar el recurso (cruzar el puente) a la vez.
+
+    (Tambien uso un semaforo adicional, num_procesos, pero no tiene que ver con
+    la resolucion del problema en si)
 ================================================================================*/
 
 int *cuenta_izquierda; // Lleva la cuenta del numero de coches que hay en el lado izquierdo del puente
