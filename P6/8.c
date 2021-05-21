@@ -56,14 +56,12 @@ void cruzar_izquierda(int id) {
     *cuenta_izquierda = *cuenta_izquierda + 1;
     if (*cuenta_izquierda == 1) {
         sem_wait(puente);
-        printf(ANSI_COLOR_GREEN "Estan cruzando coches desde la IZQUIERDA\n" ANSI_COLOR_RESET);
     }
     sem_post(mutex_cuenta_izquierda);
     cruzar_puente();
     sem_wait(mutex_cuenta_izquierda);
     *cuenta_izquierda = *cuenta_izquierda - 1;
     if (*cuenta_izquierda == 0) {
-        printf(ANSI_COLOR_GREEN "Han acabado de cruzar coches desde la IZQUIERDA\n" ANSI_COLOR_RESET);
         sem_post(puente);
     }
     sem_post(mutex_cuenta_izquierda);
@@ -74,14 +72,12 @@ void cruzar_derecha(int id) {
     *cuenta_derecha = *cuenta_derecha + 1;
     if (*cuenta_derecha == 1) {
         sem_wait(puente);
-        printf(ANSI_COLOR_GREEN "Estan cruzando coches desde la DERECHA\n" ANSI_COLOR_RESET);
     }
     sem_post(mutex_cuenta_derecha);
     cruzar_puente();
     sem_wait(mutex_cuenta_derecha);
     *cuenta_derecha = *cuenta_derecha - 1;
     if (*cuenta_derecha == 0) {
-        printf(ANSI_COLOR_GREEN "Han acabado de cruzar coches desde la DERECHA\n" ANSI_COLOR_RESET);
         sem_post(puente);
     }
     sem_post(mutex_cuenta_derecha);
