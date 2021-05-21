@@ -206,7 +206,7 @@ int main(int argc, char **argv)
         }
         else
         {
-            printf("Generado el productor %d\n", i);
+            printf("Generado el coche %d\n", i);
         }
     }
 
@@ -255,23 +255,23 @@ int main(int argc, char **argv)
     {
         if (sem_unlink("/mutex_cuenta_derecha"))
         {
-            perror("Error en sem_unlink()");
+            perror("Error en sem_unlink() a");
         }
         if (sem_unlink("/mutex_cuenta_izquierda"))
         {
-            perror("Error en sem_unlink()");
+            perror("Error en sem_unlink() b");
         }
         if (sem_unlink("/puente"))
         {
-            perror("Error en sem_unlink()");
+            perror("Error en sem_unlink() c");
         }
         if (sem_unlink("/cruzando"))
         {
-            perror("Error en sem_unlink()");
+            perror("Error en sem_unlink() d");
         }
         if (sem_unlink("/num_procesos"))
         {
-            perror("Error en sem_unlink()");
+            perror("Error en sem_unlink() e");
         }
         printf("Semaforos desvinculados.\n");
     }
