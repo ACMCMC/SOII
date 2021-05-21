@@ -154,7 +154,7 @@ int main(int argc, char **argv)
     if (puente == SEM_FAILED)
     {
         printf("Semaforos creados.\n");
-        puente = sem_open("/mutex", O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 1); // Usamos O_CREAT | O_EXCL porque podria haber dos procesos que detectaran que los semaforos no existen al mismo tiempo. De esta forma, solo uno de ellos los creara y el otro saldra con codigo de error.
+        puente = sem_open("/puente", O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 1); // Usamos O_CREAT | O_EXCL porque podria haber dos procesos que detectaran que los semaforos no existen al mismo tiempo. De esta forma, solo uno de ellos los creara y el otro saldra con codigo de error.
         num_procesos = sem_open("/num_procesos", O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 0);
         mutex_cuenta_izquierda = sem_open("/mutex_cuenta_izquierda", O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 1);
         mutex_cuenta_derecha = sem_open("/mutex_cuenta_derecha", O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 1);
