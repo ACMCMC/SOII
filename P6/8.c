@@ -60,15 +60,15 @@ Comentario al codigo:
         y lo usaran para cruzar cuando ningun otro coche este cruzando.
     -   cruzando: La uso para evitar que, dentro del conjunto de coches que
         quieren cruzar desde el mismo sentido, cruzen todos a la vez. Es decir,
-        un coche que quiera cruzar deberá adquirir este mutex.
+        un coche que quiera cruzar debera adquirir este mutex.
     
     Por tanto, tengo una especie de estructura de acceso exclusivo en dos fases.
-    Por un lado, el primer coche en cruzar bloqueará el uso del puente para su
+    Por un lado, el primer coche en cruzar bloqueara el uso del puente para su
     lado del puente. Por ejemplo, los coches que crucen desde la izquierda.
     
-    A continuación, una vez que sabemos que no hay coches que intenten cruzar
+    A continuacion, una vez que sabemos que no hay coches que intenten cruzar
     desde el otro sentido (ya que tenemos el uso del puente reservado para
-    nuestro lado), entonces cada coche adquirirá "cruzando", durante 2 segundos,
+    nuestro lado), entonces cada coche adquirira "cruzando", durante 2 segundos,
     y lo liberara cuando acabe de cruzar.
 
     Es decir, en mi codigo, es como si tuviera dos tipos de lectores, que son
