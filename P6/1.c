@@ -35,8 +35,9 @@
 (___)     (___) (___)  `.__.'    '.___.'    `.__.'  (___)      `.__.'    '.___.'   
                                                                                    
                                                                                    
-                                                                             
 Aldan Creo Marino, SOII 2020/21
+
+(no uso tildes por si hubiera problemas de formato)
 
 Comentario al codigo:
     El problema de los filosofos es el problema mas clasico que hay a la hora

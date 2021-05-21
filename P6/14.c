@@ -21,8 +21,10 @@
  ' `-' ;  ' `-'  |  | |         ' `-' ;  '  `-' /  | |         | |  ' `-'  | 
   `.__.   `.__.'_. (___)         `.__.    `.__.'  (___)       (___) `.__.'_. 
                                                                              
-                                                                             
+
 Aldan Creo Marino, SOII 2020/21
+
+(no uso tildes por si hubiera problemas de formato)
 
 Comentario al codigo:
 
@@ -42,7 +44,7 @@ Comentario al codigo:
     es muy similar al que ya se hizo en practicas anteriores, ya que la idea
     del problema es esencialmente la misma.
 
-    La unica diferencia reseñable seria que, en el caso de que la sala de
+    La unica diferencia resenable seria que, en el caso de que la sala de
     espera este llena, el cliente no se duerme a la espera de que haya un
     hueco, como si ocurria con los productores de la otra practica, sino que
     siguen paseando durante un tiempo aleatorio y vuelven a intentar sentarse
