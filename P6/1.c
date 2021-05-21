@@ -13,7 +13,6 @@
 #define ANSI_COLOR_CYAN "\x1b[36m"
 #define ANSI_COLOR_RESET "\x1b[0m"
 
-#define N 8                                  // Numero de filosofos
 #define IZQUIERDO (num_filosofo + N - 1) % N // El vecino izquierdo de i
 #define DERECHO (num_filosofo + 1) % N       // El vecino derecho de i
 #define PENSANDO 0
@@ -65,8 +64,9 @@ Comentario al codigo:
 ================================================================================*/
 
 sem_t mutex;                 // Semaforo que evita la aparicion de carreras criticas
-int estado[N];               // Los estados de los N filosofos
-sem_t semaforosFilosofos[N]; // Un semaforo por cada filosofo
+unsigned int *estado;               // Los estados de los N filosofos
+sem_t *semaforosFilosofos; // Un semaforo por cada filosofo
+unsigned int N; // Numero de filosofos
 
 // Funcion auxiliar que imprime la mesa
 void imprimir_mesa()
@@ -181,6 +181,12 @@ int main(int argc, char **argv)
     pthread_t threads_filosofos[N];
     int i;
 
+    printf("Cuantos filosofos debe haber? ");
+    scanf(" %d", &N);
+
+    semaforosFilosofos = (sem_t *) malloc(sizeof(sem_t) * N);
+    estado = (unsigned int *) malloc(sizeof(unsigned int) * N);
+
     srand(clock()); // Semilla del generador aleatorio de numeros
 
     if (sem_init(&mutex, 0, 1))
@@ -232,6 +238,9 @@ int main(int argc, char **argv)
     }
 
     sem_destroy(&mutex); // Una vez finalizados todos los hilos de los filosofos, destruimos el mutex
+
+    free(semaforosFilosofos);
+    free(estado);
 
     exit(EXIT_SUCCESS);
 }
