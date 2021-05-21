@@ -183,6 +183,7 @@ int main(int argc, char **argv)
 
     printf("Cuantos filosofos debe haber? ");
     scanf(" %d", &N);
+    printf("\n\nSe van a generar %d filosofos.\n", N);
 
     semaforosFilosofos = (sem_t *) malloc(sizeof(sem_t) * N);
     estado = (unsigned int *) malloc(sizeof(unsigned int) * N);
