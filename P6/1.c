@@ -197,7 +197,7 @@ int main(int argc, char **argv)
     // Genero los semaforos de los N filosofos. Esto no lo hago conjuntamente con el bucle siguiente, que se encarga de crear los hilos, porque un filosofo accede al semaforo de otro filosofo en la funcion probar(). Es decir, creo que es conveniente que antes de ejecutar el codigo de cualquier filosofo, esten creados los semaforos de todos ellos. Pensemos en un caso extremo, en el que un filosofo obtuviese el uso de la CPU mientras su vecino aun no esta creado, dejase de pensar, consiguiese comer, y al dejar los tenedores ejecutase la funcion probar() sobre un vecino suyo que no este creado. Esto no seria un problema, porque por defecto el estado de un filosofo no es "HAMBRIENTO", asi que nunca se ejecutaria un up() de un vecino que no existe, pero me parece mas elegante hacer las inicializaciones separadamente.
     for (i = 0; i < N; i++)
     {
-        if (sem_init(&semaforosFilosofos, 0, 0))
+        if (sem_init(&semaforosFilosofos[i], 0, 0))
         { // Inicializamos el semaforo de cada filosofo a 0
             perror("Error en sem_init()");
             exit(EXIT_FAILURE);

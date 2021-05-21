@@ -100,7 +100,7 @@ void pasear()
 // Espera 4 segundos
 void atenderCliente()
 {
-    sleep(((int)rand()) % TIEMPO_ATENCION); // Introducimos una espera aleatoria
+    sleep(TIEMPO_ATENCION); // Introducimos una espera aleatoria
 }
 
 // "Si entra un cliente en la barberia y todas las sillas estan ocupadas, abandona la barberia, y lo vuelve a intentar pasado un tiempo aleatorio"
