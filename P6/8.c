@@ -44,7 +44,11 @@ void cruzar_puente() {
 
 // Devuelve IZQUIERDA o DERECHA aleatoriamente
 int escoger_sentido() {
-    return ((int)rand() % 2);
+    int sentido;
+    int num_aleatorio;
+    num_aleatorio = ((int)rand() % 2); // 0 o 1
+    sentido = num_aleatorio == 0 ? IZQUIERDA : DERECHA;
+    return sentido;
 }
 
 void cruzar_izquierda(int id) {
