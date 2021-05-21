@@ -9,7 +9,7 @@
 #include <string.h>
 #include <semaphore.h>
 
-#define TIEMPO_CRUZAR_PUENTE 2
+#define TIEMPO_CRUZAR_PUENTE 0
 #define TIEMPO_PASEAR 3
 #define NUM_COCHES 12
 
