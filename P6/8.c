@@ -116,8 +116,6 @@ int main(int argc, char **argv)
         exit(EXIT_SUCCESS);
     }
 
-    srand(clock()); // Semilla del generador aleatorio de numeros
-
     // Opcion de reiniciar
     if (argc == 2 && (strncmp("-r", argv[1], 2) == 0))
     {
@@ -206,6 +204,7 @@ int main(int argc, char **argv)
             {
                 perror("Error en sem_post");
             }
+            srand(clock()); // Reinicio la semilla del generador aleatorio de numeros
             coche(i);
         }
         else
@@ -259,23 +258,23 @@ int main(int argc, char **argv)
     {
         if (sem_unlink("/mutex_cuenta_derecha"))
         {
-            perror("Error en sem_unlink() a");
+            perror("Error en sem_unlink()");
         }
         if (sem_unlink("/mutex_cuenta_izquierda"))
         {
-            perror("Error en sem_unlink() b");
+            perror("Error en sem_unlink()");
         }
         if (sem_unlink("/puente"))
         {
-            perror("Error en sem_unlink() c");
+            perror("Error en sem_unlink()");
         }
         if (sem_unlink("/cruzando"))
         {
-            perror("Error en sem_unlink() d");
+            perror("Error en sem_unlink()");
         }
         if (sem_unlink("/num_procesos"))
         {
-            perror("Error en sem_unlink() e");
+            perror("Error en sem_unlink()");
         }
         printf("Semaforos desvinculados.\n");
     }
