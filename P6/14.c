@@ -24,29 +24,35 @@
                                                                              
 Aldan Creo Marino, SOII 2020/21
 
-Comentario al código:
+Comentario al codigo:
 
-    El código de este ejercicio es esencialmente el mismo que el de la
-    práctica del productor-consumidor con hilos, usando mutexes y variables
-    de condición.
+    El codigo de este ejercicio es esencialmente el mismo que el de la
+    practica del productor-consumidor con hilos, usando mutexes y variables
+    de condicion.
 
     En este caso, el recurso por el que se compite son las sillas de la
-    sala de espera. Un cliente se sienta una única vez durante todo el
+    sala de espera. Un cliente se sienta una unica vez durante todo el
     programa, en una de las sillas de la sala de espera. Esto es lo mismo
-    que tener un productor que genera un único elemento en todo el programa.
+    que tener un productor que genera un unico elemento en todo el programa.
 
-    Si consigue una silla de la sala de espera, el cliente quedará a la
+    Si consigue una silla de la sala de espera, el cliente quedara a la
     espera de que un barbero le atienda. Es decir, una vez que consigue
     un lugar en el recurso compartido de memoria, espera a que el consumidor
-    lo retire del mismo. Como se puede ver, la implementación de este código
-    es muy similar al que ya se hizo en prácticas anteriores, ya que la idea
+    lo retire del mismo. Como se puede ver, la implementacion de este codigo
+    es muy similar al que ya se hizo en practicas anteriores, ya que la idea
     del problema es esencialmente la misma.
 
-    La única diferencia reseñable sería que, en el caso de que la sala de
-    espera esté llena, el cliente no se duerme a la espera de que haya un
-    hueco, como sí ocurría con los productores de la otra práctica, sino que
+    La unica diferencia reseñable seria que, en el caso de que la sala de
+    espera este llena, el cliente no se duerme a la espera de que haya un
+    hueco, como si ocurria con los productores de la otra practica, sino que
     siguen paseando durante un tiempo aleatorio y vuelven a intentar sentarse
     (espera activa).
+
+    Como observacion adicional, cabe comentar que no hago comprobaciones de
+    error en cada una de las llamadas al sistema. Esto es porque considero
+    que hacerlas saturaria el codigo, y lo que aqui es mas relevante es que
+    se pueda leer y entender facilmente. Si pusiera un if por cada llamada
+    al sistema, quedaria un "codigo espagueti".
 ===========================================================================*/
 
 pthread_mutex_t mutex_sala_espera;
@@ -88,16 +94,16 @@ void imprimir_sala_espera()
 // Espera entre 1 y 30 segundos
 void pasear()
 {
-    sleep(((int)rand()) % (TIEMPO_PASEO - 1) + 1); // Introducimos una espera aleatoria entre 0 y SLEEP_MAX_TIME
+    sleep(((int)rand()) % (TIEMPO_PASEO - 1) + 1); // Introducimos una espera aleatoria
 }
 
 // Espera 4 segundos
 void atenderCliente()
 {
-    sleep(((int)rand()) % TIEMPO_ATENCION); // Introducimos una espera aleatoria entre 0 y SLEEP_MAX_TIME
+    sleep(((int)rand()) % TIEMPO_ATENCION); // Introducimos una espera aleatoria
 }
 
-// "Si entra un cliente en la barberia y todas las sillas están ocupadas, abandona la barberia, y lo vuelve a intentar pasado un tiempo aleatorio"
+// "Si entra un cliente en la barberia y todas las sillas estan ocupadas, abandona la barberia, y lo vuelve a intentar pasado un tiempo aleatorio"
 void volverAIntentarTrasTiempoAleatorio()
 {
     pasear();
